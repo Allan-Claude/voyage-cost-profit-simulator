@@ -1,0 +1,2113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voyage Cost &amp; Profit Simulator</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d1117;--bg2:#161b22;--bg3:#1c2330;
+  --border:#2a3441;--border2:#3a4a5c;
+  --text:#e6edf3;--text2:#8b949e;--text3:#4a5568;
+  --accent:#00d4ff;--green:#3fb950;--amber:#d29922;
+  --red:#f85149;--purple:#bc8cff;--teal:#39d353;
+  --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.6;min-height:100vh;}
+.header{border-bottom:1px solid var(--border);padding:13px 24px;display:flex;align-items:center;justify-content:space-between;background:var(--bg2);}
+.header-left{display:flex;align-items:center;gap:11px;}
+.header-icon{width:29px;height:29px;background:var(--accent);border-radius:5px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.header-icon svg{width:15px;height:15px;}
+.header-title{font-family:var(--mono);font-size:12px;font-weight:500;letter-spacing:.03em;}
+.header-sub{font-size:10px;color:var(--text2);font-family:var(--mono);}
+.ver{font-family:var(--mono);font-size:10px;color:var(--text3);background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:2px 7px;}
+.tabs{display:flex;border-bottom:1px solid var(--border);background:var(--bg2);overflow-x:auto;}
+.tab{font-family:var(--mono);font-size:10px;padding:9px 13px;cursor:pointer;color:var(--text2);border-bottom:2px solid transparent;letter-spacing:.04em;text-transform:uppercase;transition:all .2s;white-space:nowrap;}
+.tab:hover{color:var(--text);}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.container{display:grid;grid-template-columns:285px 1fr;min-height:calc(100vh - 100px);}
+.sidebar{background:var(--bg2);border-right:1px solid var(--border);padding:14px 12px;display:flex;flex-direction:column;gap:13px;overflow-y:auto;}
+.main{padding:18px 22px;overflow-y:auto;}
+.field-label{font-family:var(--mono);font-size:9px;font-weight:500;color:var(--accent);letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px;}
+.field-label.sens{color:var(--amber);}
+.field-label.cargo{color:var(--teal);}
+.select-wrap{position:relative;}
+.select-wrap select{width:100%;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:11px;padding:6px 26px 6px 8px;border-radius:5px;appearance:none;cursor:pointer;outline:none;transition:border-color .2s;}
+.select-wrap select:focus{border-color:var(--accent);}
+.select-wrap::after{content:'v';position:absolute;right:8px;top:50%;transform:translateY(-50%);color:var(--accent);font-size:9px;pointer-events:none;font-family:var(--mono);}
+.vessel-badge{display:none;background:var(--bg3);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:5px;padding:8px 10px;margin-top:6px;}
+.vessel-badge.show{display:block;}
+.vb-name{font-family:var(--mono);font-size:10px;font-weight:500;}
+.vb-row{display:flex;justify-content:space-between;margin-top:3px;}
+.vb-item{font-size:9px;color:var(--text2);}
+.vb-item span{color:var(--text);font-family:var(--mono);}
+.vb-item span.purple{color:var(--purple);}
+.vb-item span.teal{color:var(--teal);}
+.mgo-flag{font-size:9px;color:var(--amber);font-family:var(--mono);margin-top:3px;display:none;}
+.mgo-flag.show{display:block;}
+/* Custom vessel form */
+.custom-form{display:none;background:var(--bg3);border:1px solid var(--border);border-left:3px solid var(--amber);border-radius:5px;padding:10px;margin-top:8px;}
+.custom-form.show{display:block;}
+.custom-form .cf-title{font-family:var(--mono);font-size:9px;color:var(--amber);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;}
+.cf-row{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:6px;}
+.cf-field label{font-size:9px;font-family:var(--mono);color:var(--text2);display:block;margin-bottom:2px;}
+.cf-field input{width:100%;background:var(--bg);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:11px;padding:4px 6px;border-radius:4px;outline:none;}
+.cf-field input:focus{border-color:var(--amber);}
+.cf-spd-table{width:100%;border-collapse:collapse;margin-bottom:6px;}
+.cf-spd-table th{font-size:8px;font-family:var(--mono);color:var(--text3);text-transform:uppercase;padding:3px 4px;text-align:left;border-bottom:1px solid var(--border);}
+.cf-spd-table td{padding:2px 2px;}
+.cf-spd-table td input{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:10px;padding:3px 4px;border-radius:3px;outline:none;}
+.cf-spd-table td input:focus{border-color:var(--amber);}
+.cf-spd-table td .rm-spd{background:none;border:none;color:var(--text3);cursor:pointer;font-size:11px;padding:0 2px;}
+.cf-spd-table td .rm-spd:hover{color:var(--red);}
+.cf-btn-row{display:flex;gap:5px;margin-bottom:6px;}
+.cf-add-spd{background:transparent;border:1px dashed var(--border2);color:var(--text2);font-family:var(--mono);font-size:9px;padding:3px 7px;border-radius:4px;cursor:pointer;}
+.cf-add-spd:hover{border-color:var(--amber);color:var(--amber);}
+.cf-save{background:var(--amber);color:var(--bg);font-family:var(--mono);font-size:10px;font-weight:500;padding:5px 10px;border:none;border-radius:4px;cursor:pointer;flex:1;}
+.cf-save:hover{background:#e5a82a;}
+/* Port autocomplete */
+.port-list{display:flex;flex-direction:column;gap:4px;}
+.port-row{display:flex;align-items:center;gap:4px;background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:4px 6px;position:relative;}
+.port-num{font-family:var(--mono);font-size:9px;color:var(--text3);width:11px;text-align:center;flex-shrink:0;}
+.ac-wrap{flex:1;position:relative;min-width:0;}
+.ac-inp{width:100%;background:transparent;border:none;outline:none;color:var(--text);font-family:var(--sans);font-size:11px;}
+.ac-inp::placeholder{color:var(--text3);}
+.ac-drop{position:absolute;top:100%;left:0;right:0;background:var(--bg2);border:1px solid var(--border2);border-radius:5px;z-index:999;max-height:180px;overflow-y:auto;display:none;margin-top:2px;box-shadow:0 4px 12px rgba(0,0,0,.4);}
+.ac-item{padding:6px 10px;font-size:11px;color:var(--text2);cursor:pointer;font-family:var(--sans);border-bottom:1px solid var(--border);transition:background .1s;}
+.ac-item:last-child{border-bottom:none;}
+.ac-item:hover{background:var(--bg3);color:var(--text);}
+.rm-btn{background:none;border:none;cursor:pointer;color:var(--text3);font-size:11px;padding:0 1px;flex-shrink:0;line-height:1;transition:color .15s;}
+.rm-btn:hover{color:var(--red);}
+.add-port-btn{width:100%;background:transparent;border:1px dashed var(--border2);color:var(--text2);font-family:var(--mono);font-size:9px;padding:5px;border-radius:5px;cursor:pointer;transition:all .2s;margin-top:2px;}
+.add-port-btn:hover{border-color:var(--accent);color:var(--accent);}
+.sb-divider{border:none;border-top:1px solid var(--border);}
+.sb-input{background:var(--bg3);border:1px solid var(--border2);font-family:var(--mono);font-size:11px;padding:5px 6px;border-radius:5px;outline:none;text-align:right;transition:border-color .2s;width:62px;}
+.sb-input:focus{border-color:var(--accent);}
+.sb-input.amber{color:var(--amber);}
+.price-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;}
+.price-field label{font-size:9px;font-family:var(--mono);color:var(--text2);display:block;margin-bottom:2px;}
+.price-field input{width:100%;background:var(--bg3);border:1px solid var(--border2);font-family:var(--mono);font-size:11px;padding:5px 6px;border-radius:5px;outline:none;text-align:right;transition:border-color .2s;}
+.price-field input.green{color:var(--green);}
+.price-field input:focus{border-color:var(--accent);}
+/* 3-tier revenue */
+.rev-table{width:100%;border-collapse:collapse;}
+.rev-table th{font-size:9px;font-family:var(--mono);color:var(--text3);letter-spacing:.06em;text-transform:uppercase;padding:0 0 4px;text-align:right;}
+.rev-table th:first-child{text-align:left;}
+.rev-table td{padding:3px 0;}
+.rev-table td:first-child{font-size:10px;color:var(--text2);padding-right:6px;white-space:nowrap;}
+.rev-inp{width:58px;background:var(--bg3);border:1px solid var(--border2);color:var(--purple);font-family:var(--mono);font-size:11px;padding:4px 5px;border-radius:4px;outline:none;text-align:right;transition:border-color .2s;}
+.rev-inp:focus{border-color:var(--accent);}
+.util-inp{width:44px;background:var(--bg3);border:1px solid var(--border2);color:var(--teal);font-family:var(--mono);font-size:11px;padding:4px 5px;border-radius:4px;outline:none;text-align:right;transition:border-color .2s;}
+.util-inp:focus{border-color:var(--accent);}
+.sens-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;}
+.sens-field label{font-size:9px;font-family:var(--mono);color:var(--amber);display:block;margin-bottom:2px;}
+.sens-field input{width:100%;background:var(--bg3);border:1px solid rgba(210,153,34,.4);color:var(--amber);font-family:var(--mono);font-size:11px;padding:5px 6px;border-radius:4px;outline:none;text-align:right;}
+.sens-rule{background:var(--bg3);border:1px solid var(--border);border-left:2px solid var(--amber);border-radius:4px;padding:5px 8px;margin-top:3px;}
+.sens-rule-row{display:flex;justify-content:space-between;font-size:9px;color:var(--text2);margin-bottom:1px;}
+.sens-rule-row:last-child{margin-bottom:0;}
+.sens-rule-val{font-family:var(--mono);color:var(--amber);font-size:9px;}
+.steps-row{display:flex;align-items:center;gap:5px;margin-top:4px;}
+.steps-row label{font-size:9px;font-family:var(--mono);color:var(--amber);}
+.steps-row input{width:44px;background:var(--bg3);border:1px solid rgba(210,153,34,.4);color:var(--amber);font-family:var(--mono);font-size:11px;padding:4px 5px;border-radius:4px;outline:none;text-align:right;}
+.run-btn{width:100%;background:var(--accent);color:var(--bg);font-family:var(--mono);font-size:11px;font-weight:500;padding:10px;border:none;border-radius:6px;cursor:pointer;letter-spacing:.06em;transition:background .2s,transform .1s;margin-top:auto;}
+.run-btn:hover{background:#00bde0;}
+.run-btn:active{transform:scale(.98);}
+/* MAIN */
+.section-head{font-family:var(--mono);font-size:9px;font-weight:500;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+.cards-row{display:grid;gap:8px;margin-bottom:10px;}
+.cards-5{grid-template-columns:repeat(5,1fr);}
+.cards-4{grid-template-columns:repeat(4,1fr);}
+.cards-3{grid-template-columns:repeat(3,1fr);}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:7px;padding:9px 11px;}
+.card.hi{border-left:3px solid var(--green);}
+.card.lo{border-left:3px solid var(--purple);}
+.card.warn{border-left:3px solid var(--amber);}
+.card.profit{border-left:3px solid var(--teal);}
+.card-lbl{font-family:var(--mono);font-size:8px;color:var(--text2);letter-spacing:.07em;text-transform:uppercase;margin-bottom:4px;}
+.card-val{font-family:var(--mono);font-size:15px;font-weight:500;line-height:1;}
+.card-val.green{color:var(--green);}
+.card-val.purple{color:var(--purple);}
+.card-val.amber{color:var(--amber);}
+.card-val.accent{color:var(--accent);}
+.card-val.teal{color:var(--teal);}
+.card-val.red{color:var(--red);}
+.card-sub{font-size:9px;color:var(--text3);margin-top:3px;}
+.table-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:7px;overflow:hidden;margin-bottom:16px;overflow-x:auto;}
+table{width:100%;border-collapse:collapse;}
+thead th{font-family:var(--mono);font-size:9px;font-weight:500;color:var(--text2);letter-spacing:.07em;text-transform:uppercase;padding:8px 10px;text-align:right;background:var(--bg3);border-bottom:1px solid var(--border);white-space:nowrap;}
+thead th:first-child{text-align:left;}
+thead th.ch{color:var(--purple);}
+thead th.cb{color:var(--amber);}
+thead th.ct{color:var(--green);}
+thead th.cp{color:var(--teal);}
+thead th.cs{color:var(--amber);}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s;}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover{background:rgba(255,255,255,.02);}
+tbody tr.mid{background:rgba(0,212,255,.05);}
+tbody tr.sens-even{background:rgba(255,255,255,.01);}
+tbody td{font-family:var(--mono);font-size:10px;color:var(--text);padding:7px 10px;text-align:right;white-space:nowrap;}
+tbody td:first-child{text-align:left;color:var(--text2);}
+td.c-hire{color:var(--purple);}
+td.c-bunk{color:var(--amber);}
+td.c-tot{color:var(--green);font-weight:500;}
+td.c-prof{color:var(--teal);font-weight:500;}
+td.c-neg{color:var(--red);font-weight:500;}
+td.c-be{color:var(--accent);}
+.tag{display:inline-block;font-size:8px;font-family:var(--mono);padding:1px 4px;border-radius:3px;margin-left:3px;vertical-align:middle;letter-spacing:.04em;}
+.tag-c{background:rgba(0,212,255,.12);color:var(--accent);border:1px solid rgba(0,212,255,.25);}
+.tag-g{background:rgba(63,185,80,.12);color:var(--green);border:1px solid rgba(63,185,80,.25);}
+.tag-a{background:rgba(210,153,34,.12);color:var(--amber);border:1px solid rgba(210,153,34,.25);}
+.cell-pill{display:inline-block;padding:1px 5px;border-radius:3px;font-size:9px;font-family:var(--mono);font-weight:500;}
+.pill-pos{background:rgba(57,211,83,.15);color:var(--teal);}
+.pill-neg{background:rgba(248,81,73,.15);color:var(--red);}
+.pill-be{background:rgba(0,212,255,.12);color:var(--accent);}
+.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:16px;}
+.chart-box{background:var(--bg2);border:1px solid var(--border);border-radius:7px;padding:13px 15px;}
+.chart-title{font-family:var(--mono);font-size:9px;color:var(--text2);letter-spacing:.07em;text-transform:uppercase;margin-bottom:9px;}
+.legend{display:flex;gap:11px;margin-bottom:7px;flex-wrap:wrap;}
+.leg-item{display:flex;align-items:center;gap:4px;font-family:var(--mono);font-size:9px;color:var(--text2);}
+.leg-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0;}
+.bar-row{display:flex;align-items:center;gap:6px;margin-bottom:4px;}
+.bar-lbl{font-family:var(--mono);font-size:9px;color:var(--text2);width:40px;text-align:right;flex-shrink:0;}
+.bar-lbl.wide{width:60px;}
+.bar-track{flex:1;height:11px;background:var(--bg3);border-radius:3px;overflow:hidden;display:flex;}
+.bar-seg{height:100%;transition:width .4s ease;}
+.bar-val{font-family:var(--mono);font-size:9px;width:80px;text-align:right;flex-shrink:0;}
+.bar-val.pos{color:var(--teal);}
+.bar-val.neg{color:var(--red);}
+.bar-val.neu{color:var(--text2);}
+.notes{background:var(--bg2);border:1px solid var(--border);border-left:3px solid var(--border2);border-radius:6px;padding:10px 12px;font-size:10px;color:var(--text2);line-height:1.8;}
+.notes strong{color:var(--text);}
+.info-box{background:var(--bg3);border:1px solid var(--border);border-left:3px solid var(--purple);border-radius:6px;padding:8px 11px;margin-bottom:14px;font-size:10px;color:var(--text2);line-height:1.7;}
+.info-box strong{color:var(--purple);}
+.sens-info-box{background:var(--bg3);border:1px solid var(--border);border-left:3px solid var(--amber);border-radius:6px;padding:8px 11px;margin-bottom:14px;font-size:10px;color:var(--text2);line-height:1.7;}
+.sens-info-box strong{color:var(--amber);}
+.placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:300px;gap:8px;color:var(--text3);}
+.placeholder-icon{font-size:28px;opacity:.2;}
+.placeholder-text{font-family:var(--mono);font-size:11px;}
+.placeholder-sub{font-size:10px;}
+.panel{display:none;}
+.panel.active{display:block;}
+.be-banner{background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.2);border-radius:6px;padding:8px 12px;margin-bottom:14px;font-size:10px;color:var(--text2);font-family:var(--mono);}
+.be-banner strong{color:var(--accent);}
+.heat-pos-hi{background:rgba(57,211,83,.28);color:var(--teal);}
+.heat-pos-md{background:rgba(57,211,83,.14);color:var(--teal);}
+.heat-pos-lo{background:rgba(57,211,83,.05);color:var(--teal);}
+.heat-neg-lo{background:rgba(248,81,73,.05);color:var(--red);}
+.heat-neg-md{background:rgba(248,81,73,.14);color:var(--red);}
+.heat-neg-hi{background:rgba(248,81,73,.28);color:var(--red);}
+/* Rotation tab */
+.rot-table-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:7px;overflow:hidden;margin-bottom:16px;overflow-x:auto;}
+.rot-table{width:100%;border-collapse:collapse;min-width:800px;}
+.rot-table thead th{font-family:var(--mono);font-size:9px;font-weight:500;color:var(--text2);letter-spacing:.07em;text-transform:uppercase;padding:8px 10px;text-align:right;background:var(--bg3);border-bottom:1px solid var(--border);white-space:nowrap;}
+.rot-table thead th:first-child,.rot-table thead th:nth-child(2){text-align:left;}
+.rot-table thead th.teal{color:var(--teal);}
+.rot-table thead th.amber{color:var(--amber);}
+.rot-table thead th.red{color:var(--red);}
+.rot-table tbody tr{border-bottom:1px solid var(--border);}
+.rot-table tbody tr:last-child{border-bottom:none;}
+.rot-table tbody tr:hover{background:rgba(255,255,255,.02);}
+.rot-table tbody tr.totals-row{background:var(--bg3);border-top:1px solid var(--border2);}
+.rot-table tbody td{font-family:var(--mono);font-size:10px;color:var(--text);padding:7px 10px;text-align:right;white-space:nowrap;}
+.rot-table tbody td:first-child{text-align:left;font-size:9px;color:var(--text3);}
+.rot-table tbody td:nth-child(2){text-align:left;color:var(--text);font-size:11px;}
+.rot-edit{background:var(--bg);border:1px solid var(--border2);font-family:var(--mono);font-size:10px;padding:3px 5px;border-radius:4px;outline:none;text-align:right;transition:border-color .2s;}
+.rot-edit:focus{border-color:var(--teal);box-shadow:0 0 0 2px rgba(57,211,83,.1);}
+.rot-edit.speed-inp{color:var(--accent);width:50px;}
+.rot-edit.speed-inp:focus{border-color:var(--accent);}
+.rot-edit.stay-inp{color:var(--teal);width:46px;}
+.rot-edit.buf-inp{color:var(--purple);width:46px;}
+.rot-edit.buf-inp:focus{border-color:var(--purple);}
+.rot-edit.exp-inp{color:var(--red);width:62px;}
+.rot-edit.exp-inp:focus{border-color:var(--red);}
+.rot-edit.dist-inp{width:56px;}
+.rot-edit.dist-auto{color:var(--text2);}
+.rot-edit.dist-manual{color:var(--amber);border-color:rgba(210,153,34,.4);}
+.revert-btn{background:none;border:1px solid var(--border);color:var(--text3);font-family:var(--mono);font-size:8px;padding:2px 4px;border-radius:3px;cursor:pointer;margin-left:2px;display:inline-block;transition:all .15s;line-height:1;}
+.revert-btn:hover{border-color:var(--accent);color:var(--accent);}
+.revert-btn.hidden{display:none;}
+.rot-summary{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-bottom:10px;}
+.rot-summary2{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-bottom:14px;}
+.rot-note{font-size:9px;color:var(--text3);font-family:var(--mono);margin-top:3px;}
+.recalc-btn{background:rgba(57,211,83,.12);border:1px solid rgba(57,211,83,.3);color:var(--teal);font-family:var(--mono);font-size:10px;padding:5px 12px;border-radius:5px;cursor:pointer;transition:all .2s;letter-spacing:.04em;}
+.recalc-btn:hover{background:rgba(57,211,83,.22);border-color:var(--teal);}
+.rot-header-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:11px;}
+.leg-badge{display:inline-block;font-family:var(--mono);font-size:8px;background:rgba(0,212,255,.1);color:var(--accent);border:1px solid rgba(0,212,255,.2);border-radius:3px;padding:1px 4px;margin-right:3px;}
+/* CARGO TAB */
+.cargo-mode-toggle{display:flex;gap:6px;margin-bottom:12px;}
+.cargo-mode-btn{font-family:var(--mono);font-size:9px;padding:5px 11px;border-radius:5px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;letter-spacing:.04em;transition:all .2s;}
+.cargo-mode-btn.active{background:rgba(57,211,83,.12);border-color:var(--teal);color:var(--teal);}
+.cargo-paste-area{display:none;}
+.cargo-paste-area.show{display:block;}
+.paste-box{width:100%;height:120px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:10px;padding:8px;border-radius:5px;outline:none;resize:vertical;line-height:1.5;}
+.paste-box:focus{border-color:var(--teal);}
+.paste-hint{font-size:9px;color:var(--text3);font-family:var(--mono);margin-top:4px;line-height:1.6;}
+.parse-btn{background:var(--teal);color:var(--bg);font-family:var(--mono);font-size:10px;font-weight:500;padding:5px 13px;border:none;border-radius:4px;cursor:pointer;transition:background .2s;margin-top:6px;}
+.parse-btn:hover{background:#2fbf47;}
+.cargo-table-wrap{overflow-x:auto;margin-bottom:12px;}
+.cargo-table{width:100%;border-collapse:collapse;min-width:900px;}
+.cargo-table thead th{font-family:var(--mono);font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;padding:7px 8px;text-align:left;background:var(--bg3);border-bottom:1px solid var(--border);}
+.cargo-table thead th.num{text-align:right;}
+.cargo-table tbody tr{border-bottom:1px solid var(--border);}
+.cargo-table tbody tr:last-child{border-bottom:none;}
+.cargo-table tbody tr:hover{background:rgba(255,255,255,.02);}
+.cargo-table tbody td{padding:4px 4px;}
+.cargo-cell{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:10px;padding:4px 6px;border-radius:3px;outline:none;transition:border-color .2s;}
+.cargo-cell:focus{border-color:var(--teal);}
+.cargo-cell.num{text-align:right;color:var(--amber);}
+.cargo-cell.cm-cell{text-align:right;color:var(--purple);}
+.cargo-cell.ro{background:var(--bg3);color:var(--teal);text-align:right;}
+.cargo-rm{background:none;border:none;color:var(--text3);cursor:pointer;font-size:12px;padding:0 3px;}
+.cargo-rm:hover{color:var(--red);}
+.cargo-footer{display:flex;justify-content:space-between;align-items:center;padding:8px 0;}
+.cargo-add-btn{background:transparent;border:1px dashed var(--border2);color:var(--text2);font-family:var(--mono);font-size:9px;padding:4px 9px;border-radius:4px;cursor:pointer;transition:all .2s;}
+.cargo-add-btn:hover{border-color:var(--teal);color:var(--teal);}
+.cargo-total-banner{background:var(--bg3);border:1px solid var(--border);border-left:3px solid var(--teal);border-radius:6px;padding:9px 12px;margin-bottom:14px;display:flex;gap:20px;flex-wrap:wrap;}
+.cargo-total-item{font-family:var(--mono);font-size:10px;color:var(--text2);}
+.cargo-total-item strong{color:var(--teal);}
+.cargo-override-notice{background:rgba(57,211,83,.06);border:1px solid rgba(57,211,83,.2);border-radius:5px;padding:6px 10px;font-family:var(--mono);font-size:9px;color:var(--teal);margin-bottom:10px;}
+.cargo-override-notice.hidden{display:none;}
+
+/* Vessel Manager */
+.vm-toolbar{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+.vm-btn{font-family:var(--mono);font-size:10px;padding:6px 13px;border-radius:5px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;letter-spacing:.04em;transition:all .2s;}
+.vm-btn:hover{color:var(--text);border-color:var(--text);}
+.vm-btn.green{background:rgba(63,185,80,.12);border-color:rgba(63,185,80,.35);color:var(--green);}
+.vm-btn.green:hover{background:rgba(63,185,80,.22);}
+.vm-btn.amber{background:rgba(210,153,34,.12);border-color:rgba(210,153,34,.35);color:var(--amber);}
+.vm-btn.amber:hover{background:rgba(210,153,34,.22);}
+.vm-btn.accent{background:rgba(0,212,255,.12);border-color:rgba(0,212,255,.35);color:var(--accent);}
+.vm-btn.accent:hover{background:rgba(0,212,255,.22);}
+.vm-btn.red{background:rgba(248,81,73,.1);border-color:rgba(248,81,73,.3);color:var(--red);}
+.vm-btn.red:hover{background:rgba(248,81,73,.2);}
+.vm-spacer{flex:1;}
+.vm-search{background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:11px;padding:5px 9px;border-radius:5px;outline:none;width:200px;}
+.vm-search:focus{border-color:var(--accent);}
+.vm-table-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:7px;overflow:hidden;margin-bottom:16px;overflow-x:auto;}
+.vm-table{width:100%;border-collapse:collapse;min-width:700px;}
+.vm-table thead th{font-family:var(--mono);font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:.07em;padding:8px 10px;text-align:left;background:var(--bg3);border-bottom:1px solid var(--border);white-space:nowrap;}
+.vm-table thead th.num{text-align:right;}
+.vm-table tbody tr{border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s;}
+.vm-table tbody tr:last-child{border-bottom:none;}
+.vm-table tbody tr:hover{background:rgba(0,212,255,.04);}
+.vm-table tbody tr.selected{background:rgba(0,212,255,.08);border-left:3px solid var(--accent);}
+.vm-table tbody tr.custom-row{border-left:3px solid var(--amber);}
+.vm-table tbody td{font-family:var(--mono);font-size:10px;color:var(--text);padding:7px 10px;text-align:left;white-space:nowrap;}
+.vm-table tbody td.num{text-align:right;}
+.vm-table tbody td.muted{color:var(--text3);}
+.vm-badge{display:inline-block;font-size:8px;font-family:var(--mono);padding:1px 5px;border-radius:3px;border:1px solid;}
+.vm-badge.builtin{background:rgba(0,212,255,.1);color:var(--accent);border-color:rgba(0,212,255,.25);}
+.vm-badge.custom{background:rgba(210,153,34,.1);color:var(--amber);border-color:rgba(210,153,34,.25);}
+.vm-detail{background:var(--bg2);border:1px solid var(--border);border-radius:7px;padding:18px;margin-bottom:16px;display:none;}
+.vm-detail.show{display:block;}
+.vm-detail-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+.vm-detail-title{font-family:var(--mono);font-size:12px;font-weight:500;}
+.vm-detail-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px;}
+.vm-field label{font-size:9px;font-family:var(--mono);color:var(--text2);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:3px;}
+.vm-field input{width:100%;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:12px;padding:6px 8px;border-radius:5px;outline:none;transition:border-color .2s;}
+.vm-field input:focus{border-color:var(--accent);}
+.vm-spd-wrap{margin-bottom:10px;}
+.vm-spd-label{font-size:9px;font-family:var(--mono);color:var(--text2);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;}
+.vm-spd-table{width:100%;border-collapse:collapse;max-width:480px;}
+.vm-spd-table th{font-size:9px;font-family:var(--mono);color:var(--text3);text-transform:uppercase;padding:4px 6px;text-align:right;border-bottom:1px solid var(--border);}
+.vm-spd-table th:first-child{text-align:left;}
+.vm-spd-table td{padding:3px 3px;}
+.vm-spd-inp{background:var(--bg3);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:11px;padding:4px 6px;border-radius:4px;outline:none;width:80px;text-align:right;}
+.vm-spd-inp:focus{border-color:var(--accent);}
+.vm-spd-rm{background:none;border:none;color:var(--text3);cursor:pointer;font-size:12px;padding:0 4px;}
+.vm-spd-rm:hover{color:var(--red);}
+.vm-add-spd{background:transparent;border:1px dashed var(--border2);color:var(--text2);font-family:var(--mono);font-size:9px;padding:4px 10px;border-radius:4px;cursor:pointer;margin-top:5px;}
+.vm-add-spd:hover{border-color:var(--teal);color:var(--teal);}
+.vm-detail-actions{display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);}
+.vm-import-zone{background:var(--bg3);border:2px dashed var(--border2);border-radius:8px;padding:24px;text-align:center;margin-bottom:14px;transition:border-color .2s;cursor:pointer;}
+.vm-import-zone:hover{border-color:var(--accent);}
+.vm-import-zone input[type=file]{display:none;}
+.vm-import-title{font-family:var(--mono);font-size:11px;color:var(--text2);margin-bottom:6px;}
+.vm-import-sub{font-size:10px;color:var(--text3);}
+.vm-format-box{background:var(--bg3);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:6px;padding:10px 13px;margin-bottom:14px;font-size:10px;color:var(--text2);line-height:1.9;font-family:var(--mono);}
+.vm-format-box strong{color:var(--accent);}
+
+
+/* Version History */
+.hist-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:220px;gap:8px;color:var(--text3);}
+.hist-toolbar{display:flex;align-items:center;gap:8px;margin-bottom:14px;}
+.hist-table-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:7px;overflow:hidden;margin-bottom:16px;overflow-x:auto;}
+.hist-table{width:100%;border-collapse:collapse;min-width:1000px;}
+.hist-table thead th{font-family:var(--mono);font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;padding:8px 10px;text-align:right;background:var(--bg3);border-bottom:1px solid var(--border);white-space:nowrap;}
+.hist-table thead th:first-child,.hist-table thead th:nth-child(2){text-align:left;}
+.hist-table tbody tr{border-bottom:1px solid var(--border);transition:background .1s;cursor:pointer;}
+.hist-table tbody tr:last-child{border-bottom:none;}
+.hist-table tbody tr:hover{background:rgba(0,212,255,.04);}
+.hist-table tbody tr.hist-active{background:rgba(0,212,255,.08);border-left:3px solid var(--accent);}
+.hist-table tbody td{font-family:var(--mono);font-size:10px;padding:7px 10px;text-align:right;white-space:nowrap;color:var(--text);}
+.hist-table tbody td:first-child{text-align:left;color:var(--text2);font-size:9px;}
+.hist-table tbody td:nth-child(2){text-align:left;color:var(--text);}
+.save-hist-btn{font-family:var(--mono);font-size:9px;padding:3px 8px;border-radius:4px;border:1px solid rgba(57,211,83,.4);background:rgba(57,211,83,.1);color:var(--teal);cursor:pointer;transition:all .2s;white-space:nowrap;}
+.save-hist-btn:hover{background:rgba(57,211,83,.25);border-color:var(--teal);}
+.restore-btn{font-family:var(--mono);font-size:9px;padding:3px 8px;border-radius:4px;border:1px solid rgba(0,212,255,.4);background:rgba(0,212,255,.1);color:var(--accent);cursor:pointer;transition:all .2s;}
+.restore-btn:hover{background:rgba(0,212,255,.2);}
+.del-hist-btn{font-family:var(--mono);font-size:9px;padding:3px 6px;border-radius:4px;border:1px solid rgba(248,81,73,.3);background:transparent;color:var(--red);cursor:pointer;transition:all .2s;}
+.del-hist-btn:hover{background:rgba(248,81,73,.1);}
+.hist-ver-badge{font-family:var(--mono);font-size:9px;background:rgba(0,212,255,.1);color:var(--accent);border:1px solid rgba(0,212,255,.2);border-radius:3px;padding:1px 5px;margin-right:4px;}
+.hist-detail-box{background:var(--bg3);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:6px;padding:10px 14px;margin-bottom:14px;font-size:10px;color:var(--text2);line-height:1.8;}
+.hist-detail-box strong{color:var(--text);}
+/* Revenue Sensitivity */
+.revsen-section{margin-bottom:22px;}
+.revsen-controls{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px;background:var(--bg2);border:1px solid var(--border);border-radius:7px;padding:12px 14px;}
+.revsen-field label{font-size:9px;font-family:var(--mono);color:var(--text2);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:3px;}
+.revsen-inp{background:var(--bg3);border:1px solid var(--border2);color:var(--amber);font-family:var(--mono);font-size:11px;padding:5px 7px;border-radius:4px;outline:none;width:72px;text-align:right;}
+.revsen-inp:focus{border-color:var(--amber);}
+.revsen-run{background:var(--amber);color:var(--bg);font-family:var(--mono);font-size:10px;font-weight:500;padding:6px 14px;border:none;border-radius:5px;cursor:pointer;letter-spacing:.04em;transition:background .2s;}
+.revsen-run:hover{background:#e5a82a;}
+
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+<div class="header">
+  <div class="header-left">
+    <div class="header-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#0d1117" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M2 20h20M4 20V10l8-7 8 7v10M10 20v-5h4v5"/>
+      </svg>
+    </div>
+    <div>
+      <div class="header-title">VOYAGE COST &amp; PROFIT SIMULATOR</div>
+      <div class="header-sub">Bunker &middot; Charter hire &middot; Port expenses &middot; Cargo profitability &middot; Sensitivity</div>
+    </div>
+  </div>
+  <div class="ver">v9.0</div>
+</div>
+<div class="tabs">
+  <div class="tab" onclick="switchTab('vm')">Vessel Manager</div>
+  <div class="tab active" onclick="switchTab('rot')">Port Rotation</div>
+  <div class="tab" onclick="switchTab('cargo')">Cargo Input</div>
+  <div class="tab" onclick="switchTab('cost')">Voyage Cost</div>
+  <div class="tab" onclick="switchTab('profit')">Profitability</div>
+  <div class="tab" onclick="switchTab('sens')">Bunker Sensitivity</div>
+  <div class="tab" onclick="switchTab('revsen')">Revenue Sensitivity</div>
+  <div class="tab" onclick="switchTab('hist')">Version History</div>
+</div>
+<div class="container">
+  <div class="sidebar">
+    <!-- 01 VESSEL -->
+    <div>
+      <div class="field-label">01 &middot; Vessel</div>
+      <div class="select-wrap">
+        <select id="vesselSelect" onchange="onVesselChange()">
+          <option value="">-- Select vessel --</option>
+        </select>
+      </div>
+      <div class="vessel-badge" id="vesselBadge">
+        <div class="vb-name" id="vbName"></div>
+        <div class="vb-row">
+          <div class="vb-item">Hire: <span class="purple" id="vbHire"></span></div>
+          <div class="vb-item">TEU: <span class="teal" id="vbTeu"></span></div>
+        </div>
+        <div class="vb-row">
+          <div class="vb-item">Speed: <span id="vbSpd"></span></div>
+          <div class="vb-item">Points: <span id="vbPts"></span></div>
+        </div>
+        <div class="mgo-flag" id="mgoFlag">MGO data available</div>
+      </div>
+      <!-- CUSTOM VESSEL FORM -->
+      <div class="custom-form" id="customForm">
+        <div class="cf-title">New Vessel Specification</div>
+        <div class="cf-row">
+          <div class="cf-field" style="grid-column:1/-1"><label>Vessel Name</label><input type="text" id="cfName" placeholder="e.g. MY NEW SHIP"></div>
+        </div>
+        <div class="cf-row">
+          <div class="cf-field"><label>TEU Capacity</label><input type="number" id="cfTeu" placeholder="1500" min="1"></div>
+          <div class="cf-field"><label>Hire ($/day)</label><input type="number" id="cfHire" placeholder="25000" min="0"></div>
+        </div>
+        <div style="font-size:9px;font-family:var(--mono);color:var(--text3);margin-bottom:4px;">Speed-Consumption Points:</div>
+        <table class="cf-spd-table">
+          <thead><tr><th>Speed (kn)</th><th>LSFO (MT/d)</th><th>MGO (MT/d)</th><th></th></tr></thead>
+          <tbody id="cfSpdBody"></tbody>
+        </table>
+        <div class="cf-btn-row">
+          <button class="cf-add-spd" onclick="addSpdPoint()">+ Add speed point</button>
+          <button class="cf-save" onclick="saveCustomVessel()">Save Vessel</button>
+        </div>
+      </div>
+    </div>
+    <hr class="sb-divider">
+    <!-- 02 PORT ROTATION -->
+    <div>
+      <div class="field-label">02 &middot; Port Rotation</div>
+      <div class="port-list" id="portList"></div>
+      <button class="add-port-btn" onclick="addPort()">+ Add port</button>
+      <div class="rot-note" style="margin-top:5px;">Distances auto-calculated (Haversine). Override per-leg in Rotation tab.</div>
+    </div>
+    <hr class="sb-divider">
+    <!-- 03 DEFAULTS -->
+    <div>
+      <div class="field-label">03 &middot; Default Settings</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">
+        <div>
+          <div style="font-size:9px;font-family:var(--mono);color:var(--text2);margin-bottom:2px;">Speed (kn)</div>
+          <input type="number" id="defSpeed" class="sb-input amber" value="13" min="8" max="20" step="0.5" onchange="applyDefaults()">
+        </div>
+        <div>
+          <div style="font-size:9px;font-family:var(--mono);color:var(--text2);margin-bottom:2px;">Port stay (d)</div>
+          <input type="number" id="portStay" class="sb-input amber" value="1" min="0" step="0.5" onchange="applyDefaults()">
+        </div>
+      </div>
+      <div class="rot-note">Edit per-leg in Port Rotation tab</div>
+    </div>
+    <hr class="sb-divider">
+    <!-- 04 BUNKER -->
+    <div>
+      <div class="field-label">04 &middot; Bunker Prices (USD/MT)</div>
+      <div class="price-grid">
+        <div class="price-field"><label>HSFO</label><input type="number" id="hsfoPrice" class="green" value="450" min="0" step="5"></div>
+        <div class="price-field"><label>LSFO</label><input type="number" id="lsfoPrice" class="green" value="550" min="0" step="5" onchange="syncSensRules()"></div>
+        <div class="price-field"><label>MGO</label><input type="number" id="mgoPrice" class="green" value="750" min="0" step="5"></div>
+      </div>
+    </div>
+    <hr class="sb-divider">
+    <!-- 05 PROFITABILITY -->
+    <div>
+      <div class="field-label">05 &middot; Profitability Inputs <span style="font-size:8px;color:var(--text3);font-family:var(--mono)">(base fallback)</span></div>
+      <table class="rev-table">
+        <thead><tr><th>Stream</th><th>$/TEU</th><th>Util%</th></tr></thead>
+        <tbody>
+          <tr><td>Headhaul</td><td><input type="number" id="hhRev" class="rev-inp" value="300" min="0" step="10"></td><td><input type="number" id="hhUtil" class="util-inp" value="100" min="0" max="100" step="5"></td></tr>
+          <tr><td>Backhaul</td><td><input type="number" id="bhRev" class="rev-inp" value="150" min="0" step="10"></td><td><input type="number" id="bhUtil" class="util-inp" value="100" min="0" max="100" step="5"></td></tr>
+          <tr><td>Double Dip</td><td><input type="number" id="ddRev" class="rev-inp" value="50" min="0" step="10"></td><td><input type="number" id="ddUtil" class="util-inp" value="100" min="0" max="100" step="5"></td></tr>
+        </tbody>
+      </table>
+      <div class="rot-note">If cargo data entered in Cargo Input tab, that overrides these values.</div>
+    </div>
+    <hr class="sb-divider">
+    <!-- 06 SENSITIVITY -->
+    <div>
+      <div class="field-label sens">06 &middot; Bunker Sensitivity Range</div>
+      <div class="sens-grid">
+        <div class="sens-field"><label>Min LSFO</label><input type="number" id="sensMin" value="400" min="0" step="25" onchange="syncSensRules()"></div>
+        <div class="sens-field"><label>Max LSFO</label><input type="number" id="sensMax" value="800" min="0" step="25" onchange="syncSensRules()"></div>
+      </div>
+      <div class="steps-row">
+        <label>Steps:</label>
+        <input type="number" id="sensSteps" value="9" min="3" max="20">
+      </div>
+      <div class="sens-rule">
+        <div class="sens-rule-row"><span>HSFO = LSFO - $100</span><span class="sens-rule-val" id="srHsfo">--</span></div>
+        <div class="sens-rule-row"><span>LSFO (base)</span><span class="sens-rule-val" id="srLsfo">--</span></div>
+        <div class="sens-rule-row"><span>MGO = LSFO + $400</span><span class="sens-rule-val" id="srMgo">--</span></div>
+      </div>
+    </div>
+    <hr class="sb-divider">
+    <button class="run-btn" onclick="runSimulation()">RUN SIMULATION</button>
+  </div>
+  <!-- MAIN PANELS -->
+  <div class="main">
+    <div class="panel" id="panelVm"><div id="vmContent"></div></div>
+    <div class="panel active" id="panelRot"><div id="rotContent"><div class="placeholder"><div class="placeholder-icon">O</div><div class="placeholder-text">Select a vessel and add ports</div><div class="placeholder-sub">Distances auto-calculate via Haversine</div></div></div></div>
+    <div class="panel" id="panelCargo"><div id="cargoContent"></div></div>
+    <div class="panel" id="panelCost"><div id="costContent"><div class="placeholder"><div class="placeholder-icon">A</div><div class="placeholder-text">Run the simulation first</div></div></div></div>
+    <div class="panel" id="panelProfit"><div id="profitContent"><div class="placeholder"><div class="placeholder-icon">$</div><div class="placeholder-text">Run the simulation first</div></div></div></div>
+    <div class="panel" id="panelSens"><div id="sensContent"><div class="placeholder"><div class="placeholder-icon">~</div><div class="placeholder-text">Run the simulation first</div></div></div></div>
+      <div class="panel" id="panelRevsen"><div id="revsenContent"><div class="placeholder"><div class="placeholder-icon">$</div><div class="placeholder-text">Run simulation first to generate revenue sensitivity</div></div></div></div>
+    <div class="panel" id="panelHist"><div id="histContent"></div></div>
+  </div>
+</div>
+<script>
+var PWL=[
+['Aden, Yemen',12.7794,45.0367,'YEADE'],
+['Abu Dhabi, UAE',24.4539,54.3773,'AEAUH'],
+['Adelaide, Australia',-34.9285,138.6007,'AUADL'],
+['Agadir, Morocco',30.4278,-9.5981,'MAAGA'],
+['Algeciras, Spain',36.1408,-5.4554,'ESALG'],
+['Alexandria, Egypt',31.2001,29.9187,'EGALX'],
+['Antwerp, Belgium',51.2194,4.4025,'BEANR'],
+['Aqaba, Jordan',29.5321,35.0063,'JOAQJ'],
+['Auckland, New Zealand',-36.8485,174.7633,'NZAKL'],
+['Bahrain',26.0667,50.5577,'BHBAH'],
+['Baltimore, USA',39.2904,-76.6122,'USBAL'],
+['Bandar Abbas, Iran',27.1832,56.2666,'IRBND'],
+['Barcelona, Spain',41.3851,2.1734,'ESBCN'],
+['Beirut, Lebanon',33.8938,35.5018,'LBBEY'],
+['Beira, Mozambique',-19.8437,34.8389,'MZBEW'],
+['Boston, USA',42.3601,-71.0589,'USBOS'],
+['Bremerhaven, Germany',53.5393,8.5809,'DEBRV'],
+['Brisbane, Australia',-27.4698,153.0251,'AUBNE'],
+['Buenos Aires, Argentina',-34.6037,-58.3816,'ARBUE'],
+['Busan, South Korea',35.1028,129.0403,'KRPUS'],
+['Callao, Peru',-12.0464,-77.1428,'PECLL'],
+['Cape Town, South Africa',-33.9258,18.4232,'ZACPT'],
+['Cartagena, Colombia',10.391,-75.4794,'COCTG'],
+['Cebu, Philippines',10.3157,123.8854,'PHCEB'],
+['Charleston, USA',32.7765,-79.9311,'USCHS'],
+['Chennai, India',13.0827,80.2707,'INMAA'],
+['Chittagong, Bangladesh',22.3475,91.8123,'BDCGP'],
+['Cochin, India',9.9312,76.2673,'INCOK'],
+['Colombo, Sri Lanka',6.9319,79.8478,'LKCMB'],
+['Colon, Panama',9.3557,-79.9016,'PAONX'],
+['Constanta, Romania',44.1598,28.6348,'ROCND'],
+['Copenhagen, Denmark',55.6761,12.5683,'DKCPH'],
+['Dakar, Senegal',14.6928,-17.4467,'SNDKR'],
+['Dalian, China',38.914,121.6147,'CNDLC'],
+['Dammam, Saudi Arabia',26.4207,50.0888,'SADMM'],
+['Dar es Salaam, Tanzania',-6.7924,39.2083,'TZDAR'],
+['Damietta, Egypt',31.4149,31.8057,'EGDAM'],
+['Djibouti',11.572,43.1456,'DJJIB'],
+['Douala, Cameroon',4.0511,9.7679,'CMDLA'],
+['Dubai, UAE',25.2048,55.2708,'AEDXB'],
+['Dunkirk, France',51.0364,2.3763,'FRDRK'],
+['Durban, South Africa',-29.8579,31.0292,'ZADUR'],
+['Felixstowe, UK',51.9539,1.3518,'GBFXT'],
+['Fos-sur-Mer, France',43.4432,4.9393,'FRFOS'],
+['Fremantle, Australia',-32.0562,115.7433,'AUFRE'],
+['Gdansk, Poland',54.352,18.6466,'PLGDN'],
+['Genoa, Italy',44.4056,8.9463,'ITGOA'],
+['Gioia Tauro, Italy',38.4215,15.8989,'ITGIO'],
+['Gothenburg, Sweden',57.7089,11.9746,'SEGOT'],
+['Guangzhou/Nansha, China',22.7536,113.6194,'CNNSA'],
+['Guayaquil, Ecuador',-2.1894,-79.8891,'ECGYE'],
+['Hai Phong, Vietnam',20.8449,106.6881,'VNHPH'],
+['Haifa, Israel',32.8191,34.9983,'ILHFA'],
+['Halifax, Canada',44.6488,-63.5752,'CAHAL'],
+['Hamburg, Germany',53.5753,10.0153,'DEHAM'],
+['Helsinki, Finland',60.1699,24.9384,'FIHEL'],
+['Ho Chi Minh City, Vietnam',10.7769,106.7009,'VNSGN'],
+['Hodeidah, Yemen',14.7982,42.9666,'YEHOD'],
+['Hong Kong',22.3193,114.1694,'HKHKG'],
+['Houston, USA',29.7604,-95.3698,'USHOU'],
+['Incheon, South Korea',37.4563,126.7052,'KRINC'],
+['Itajai, Brazil',-26.9078,-48.6656,'BRITJ'],
+['Istanbul/Ambarli, Turkey',40.9836,28.6908,'TRIST'],
+['Izmir, Turkey',38.4237,27.1428,'TRIZM'],
+['Jakarta, Indonesia',-6.1068,106.8456,'IDJKT'],
+['Jebel Ali, UAE',24.9857,55.0272,'AEJEA'],
+['Jeddah, Saudi Arabia',21.4858,39.1925,'SAJED'],
+['Jubail, Saudi Arabia',27.0046,49.6581,'SAJUB'],
+['Kaohsiung, Taiwan',22.6273,120.3014,'TWKHH'],
+['Karachi, Pakistan',24.8607,67.0011,'PKKHJ'],
+['Keelung, Taiwan',25.1276,121.7392,'TWKEL'],
+['King Abdullah Port, Saudi Arabia',22.4065,39.1152,'SAKAP'],
+['Kingston, Jamaica',17.9714,-76.792,'JMKIN'],
+['Kobe, Japan',34.6778,135.1994,'JPUKB'],
+['Kolkata, India',22.5726,88.3639,'INCCU'],
+['Koper, Slovenia',45.5469,13.7294,'SIKOP'],
+['Kuwait City, Kuwait',29.3759,47.9774,'KWKWI'],
+['La Spezia, Italy',44.1024,9.824,'ITSPZ'],
+['Laem Chabang, Thailand',13.0849,100.8986,'THLCH'],
+['Lagos/Apapa, Nigeria',6.4531,3.3958,'NGAPP'],
+['Latakia, Syria',35.5353,35.7714,'SYLAT'],
+['Le Havre, France',49.4944,0.1079,'FRLEH'],
+['Limassol, Cyprus',34.6786,33.0413,'CYLCA'],
+['Liverpool, UK',53.4084,-2.9916,'GBLIV'],
+['London Gateway, UK',51.5014,0.4836,'GBLGW'],
+['Long Beach, USA',33.753,-118.1937,'USLGB'],
+['Los Angeles, USA',33.729,-118.2617,'USLAX'],
+['Luanda, Angola',-8.8368,13.2343,'AOLAD'],
+['Makassar, Indonesia',-5.1477,119.4327,'IDMKS'],
+['Manila, Philippines',14.5794,120.9726,'PHMNL'],
+['Manzanillo, Mexico',19.0511,-104.3155,'MXZLO'],
+['Maputo, Mozambique',-25.9692,32.5732,'MZMPM'],
+['Marseille, France',43.2965,5.3698,'FRMRS'],
+['Medan/Belawan, Indonesia',3.7941,98.7173,'IDBWX'],
+['Melbourne, Australia',-37.8136,144.9631,'AUMEL'],
+['Mersin, Turkey',36.8121,34.6415,'TRMER'],
+['Miami, USA',25.7617,-80.1918,'USMIA'],
+['Mombasa, Kenya',-4.0435,39.6682,'KEMBA'],
+['Montevideo, Uruguay',-34.9011,-56.1645,'UYMVD'],
+['Montreal, Canada',45.5017,-73.5673,'CAMTR'],
+['Mundra, India',22.7383,69.7158,'INMUN'],
+['Muscat, Oman',23.588,58.3829,'OMMCT'],
+['Nagoya, Japan',35.0591,136.8785,'JPNGO'],
+['Naples, Italy',40.8518,14.2681,'ITNAP'],
+['New Orleans, USA',29.9511,-90.0715,'USMSY'],
+['New York/New Jersey, USA',40.6643,-74.0164,'USNYC'],
+['Nhava Sheva, India',18.9322,72.9781,'INNSA'],
+['Ningbo, China',29.8683,121.544,'CNNGB'],
+['Norfolk, USA',36.8468,-76.2851,'USORF'],
+['Oakland, USA',37.8044,-122.2711,'USOAK'],
+['Odessa, Ukraine',46.4825,30.7326,'UAODS'],
+['Osaka, Japan',34.6554,135.4689,'JPOSA'],
+['Oslo, Norway',59.9139,10.7522,'NOOSL'],
+['Palembang, Indonesia',-2.9762,104.7754,'IDPLM'],
+['Palermo, Italy',38.1157,13.3615,'ITPMO'],
+['Penang, Malaysia',5.4164,100.3327,'MYPGU'],
+['Piraeus, Greece',37.9455,23.6222,'GRPIR'],
+['Port Elizabeth, South Africa',-33.9608,25.5997,'ZAPLZ'],
+['Port Klang, Malaysia',3.0319,101.3905,'MYPKG'],
+['Port Klang West Port, Malaysia',2.9986,101.3739,'MYWPK'],
+['Port Louis, Mauritius',-20.1619,57.4985,'MUPLU'],
+['Port Said, Egypt',31.2565,32.2841,'EGPSD'],
+['Prince Rupert, Canada',54.315,-130.3208,'CAPTR'],
+['Qingdao, China',36.0671,120.3826,'CNTAO'],
+['Rio de Janeiro, Brazil',-22.9068,-43.1729,'BRRIO'],
+['Rotterdam, Netherlands',51.9244,4.4777,'NLRTM'],
+['Salalah, Oman',17.0151,54.0924,'OMSLL'],
+['Santos, Brazil',-23.9618,-46.3322,'BRSSZ'],
+['Savannah, USA',32.0809,-81.0912,'USSAV'],
+['Seattle/Tacoma, USA',47.6062,-122.3321,'USSEA'],
+['Semarang, Indonesia',-6.9932,110.4203,'IDSRG'],
+['Shanghai, China',31.2304,121.4737,'CNSHA'],
+['Sharjah, UAE',25.3462,55.4209,'AESHJ'],
+['Shekou, China',22.4847,113.9152,'CNSKU'],
+['Shenzhen/Yantian, China',22.5609,114.2568,'CNYTN'],
+['Singapore',1.2897,103.8501,'SGSIN'],
+['Sohar, Oman',24.3419,56.7401,'OMSOH'],
+['Sokhna, Egypt',29.9553,32.5498,'EGSKH'],
+['Southampton, UK',50.9097,-1.4044,'GBSOU'],
+['Surabaya, Indonesia',-7.2492,112.7508,'IDSUB'],
+['Sydney, Australia',-33.8688,151.2093,'AUSYD'],
+['Taichung, Taiwan',24.2766,120.5491,'TWTXG'],
+['Tanjung Pelepas, Malaysia',1.3628,103.5544,'MYTPP'],
+['Tema, Ghana',5.6037,-0.0082,'GHTEM'],
+['Thessaloniki, Greece',40.6401,22.9444,'GRSKU'],
+['Tianjin, China',39.0456,117.6997,'CNTXG'],
+['Tilbury, UK',51.4583,0.36,'GBTIL'],
+['Toamasina, Madagascar',-18.1491,49.4023,'MGTMM'],
+['Tokyo, Japan',35.6386,139.7544,'JPTYO'],
+['Trieste, Italy',45.6495,13.7768,'ITTRS'],
+['Valencia, Spain',39.4699,-0.3763,'ESVLC'],
+['Valparaiso, Chile',-33.0472,-71.6127,'CLVAP'],
+['Vancouver, Canada',49.2827,-123.1207,'CAVAN'],
+['Visakhapatnam, India',17.6868,83.2185,'INVTZ'],
+['Xiamen, China',24.4798,118.0894,'CNXMN'],
+['Yokohama, Japan',35.4437,139.638,'JPYOK'],
+['Zanzibar, Tanzania',-6.1659,39.2026,'TZZNZ'],
+['Zeebrugge, Belgium',51.3385,3.1832,'BEZEE']
+];
+
+var VESSELS=[
+  {name:"HDX HONGYUAN",code:"HDHY",hire:25000,teu:1700,speeds:[{speed:11.0,lsfo:20.0,mgo:null}]},
+  {name:"WAN FU DA",code:"WNFD",hire:30000,teu:1590,speeds:[{speed:11.0,lsfo:24.5,mgo:null},{speed:11.5,lsfo:26.0,mgo:null},{speed:12.0,lsfo:27.5,mgo:null},{speed:12.5,lsfo:28.0,mgo:null},{speed:13.0,lsfo:30.0,mgo:null},{speed:13.5,lsfo:31.0,mgo:null},{speed:14.0,lsfo:32.5,mgo:null},{speed:14.5,lsfo:33.0,mgo:null}]},
+  {name:"TIGER LONGKOU",code:"TGLK",hire:27000,teu:1350,speeds:[{speed:11.0,lsfo:15.0,mgo:3.5},{speed:11.5,lsfo:15.5,mgo:3.5},{speed:12.0,lsfo:16.0,mgo:3.5},{speed:12.5,lsfo:18.0,mgo:3.5},{speed:13.0,lsfo:19.0,mgo:3.5},{speed:13.5,lsfo:21.0,mgo:3.5},{speed:14.0,lsfo:23.2,mgo:3.5},{speed:14.5,lsfo:25.0,mgo:3.5},{speed:15.0,lsfo:27.3,mgo:3.5}]},
+  {name:"CUL NANSHA",code:"CUNS",hire:24000,teu:1600,speeds:[{speed:11.0,lsfo:12.0,mgo:null},{speed:11.5,lsfo:15.0,mgo:null},{speed:12.0,lsfo:18.0,mgo:null},{speed:12.5,lsfo:19.5,mgo:null},{speed:13.0,lsfo:21.0,mgo:null},{speed:13.5,lsfo:24.0,mgo:null},{speed:14.0,lsfo:26.0,mgo:null},{speed:14.5,lsfo:28.0,mgo:null},{speed:15.0,lsfo:30.0,mgo:null},{speed:15.5,lsfo:30.5,mgo:null},{speed:16.0,lsfo:31.0,mgo:null}]},
+  {name:"HAIAN MIND",code:"HAMD",hire:30000,teu:1450,speeds:[{speed:11.0,lsfo:22.0,mgo:null},{speed:11.5,lsfo:22.5,mgo:null},{speed:12.0,lsfo:24.0,mgo:null},{speed:12.5,lsfo:24.5,mgo:null},{speed:13.0,lsfo:27.0,mgo:null},{speed:13.5,lsfo:27.5,mgo:null},{speed:14.0,lsfo:30.0,mgo:null},{speed:14.5,lsfo:32.0,mgo:null},{speed:15.0,lsfo:34.0,mgo:null},{speed:15.5,lsfo:36.0,mgo:null},{speed:16.0,lsfo:39.0,mgo:null}]},
+  {name:"KR TASMAN",code:"KRTM",hire:28000,teu:1220,speeds:[{speed:11.0,lsfo:18.0,mgo:null},{speed:11.5,lsfo:18.5,mgo:null},{speed:12.0,lsfo:19.5,mgo:null},{speed:12.5,lsfo:22.0,mgo:null},{speed:13.0,lsfo:23.0,mgo:null},{speed:13.5,lsfo:25.0,mgo:null},{speed:14.0,lsfo:27.0,mgo:null},{speed:14.5,lsfo:32.0,mgo:null},{speed:15.0,lsfo:35.0,mgo:null},{speed:15.5,lsfo:38.0,mgo:null},{speed:16.0,lsfo:42.0,mgo:null}]},
+  {name:"CUL LAEMCHABANG",code:"CULC",hire:24000,teu:1600,speeds:[{speed:11.0,lsfo:17.0,mgo:null},{speed:11.5,lsfo:18.0,mgo:null},{speed:12.0,lsfo:19.2,mgo:null},{speed:12.5,lsfo:20.4,mgo:null},{speed:13.0,lsfo:22.0,mgo:null},{speed:13.5,lsfo:23.4,mgo:null},{speed:14.0,lsfo:24.9,mgo:null},{speed:14.5,lsfo:26.6,mgo:null},{speed:15.0,lsfo:28.4,mgo:null},{speed:15.5,lsfo:30.0,mgo:null},{speed:16.0,lsfo:32.0,mgo:null}]},
+  {name:"CUL HUMEN",code:"CUHM",hire:25000,teu:1150,speeds:[{speed:12.0,lsfo:23.0,mgo:null},{speed:12.5,lsfo:24.5,mgo:null},{speed:13.0,lsfo:26.0,mgo:null},{speed:13.5,lsfo:27.5,mgo:null},{speed:14.0,lsfo:29.0,mgo:null}]}
+];
+
+var customVessels=[];
+var customSpdPoints=[{speed:'',lsfo:'',mgo:''}];
+
+/* STATE */
+var ports=[];
+var legSpeeds=[];
+var legPortStays=[];
+var legBufferHrs=[];
+var legPortExpenses=[];
+var cargoRows=[];
+var costRows=[];   // promoted to module-level so Save to History onclick can reference it
+
+function n(v,dp){return v.toLocaleString('en-US',{minimumFractionDigits:dp||0,maximumFractionDigits:dp||0});}
+function usd(v){return '$'+n(Math.round(v));}
+function susd(v){return (v>=0?'+':'')+usd(v);}
+
+function haversine(lat1,lon1,lat2,lon2){
+  var R=3440.065;
+  var dLat=(lat2-lat1)*Math.PI/180;
+  var dLon=(lon2-lon1)*Math.PI/180;
+  var a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
+  return Math.round(R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a)));
+}
+
+function recalcDist(i){
+  if(i<0||i>=ports.length-1)return;
+  if(!ports[i].manual&&ports[i].lat!==null&&ports[i+1]&&ports[i+1].lat!==null){
+    ports[i].dist=haversine(ports[i].lat,ports[i].lon,ports[i+1].lat,ports[i+1].lon);
+  }
+}
+
+function switchTab(t){
+  var ids=['vm','rot','cargo','cost','profit','sens','revsen','hist'];
+  var tabs=document.querySelectorAll('.tab');
+  ids.forEach(function(id,i){
+    var panel=document.getElementById('panel'+id.charAt(0).toUpperCase()+id.slice(1));
+    if(panel)panel.classList.toggle('active',id===t);
+    if(tabs[i])tabs[i].classList.toggle('active',id===t);
+  });
+  if(t==='cargo')  renderCargoTab();
+  if(t==='hist')   renderHistTab();
+  if(t==='revsen') renderRevSenTab();
+}
+
+function syncSensRules(){
+  var lsfo=parseFloat(document.getElementById('lsfoPrice').value)||550;
+  document.getElementById('srHsfo').textContent='$'+n(Math.max(0,lsfo-100));
+  document.getElementById('srLsfo').textContent='$'+n(lsfo);
+  document.getElementById('srMgo').textContent='$'+n(lsfo+400);
+}
+function getDefSpeed(){return parseFloat(document.getElementById('defSpeed').value)||13;}
+function getDefStay(){return parseFloat(document.getElementById('portStay').value)||1;}
+function allVessels(){return VESSELS.concat(customVessels);}
+function currentVessel(){var c=document.getElementById('vesselSelect').value;return c?allVessels().find(function(v){return v.code===c;}):null;}
+
+function initLegArrays(){
+  var nL=Math.max(0,ports.length-1),nP=ports.length;
+  while(legSpeeds.length<nL)legSpeeds.push(getDefSpeed());
+  while(legSpeeds.length>nL)legSpeeds.pop();
+  while(legPortStays.length<nP)legPortStays.push(getDefStay());
+  while(legPortStays.length>nP)legPortStays.pop();
+  while(legBufferHrs.length<nP)legBufferHrs.push(0);
+  while(legBufferHrs.length>nP)legBufferHrs.pop();
+  while(legPortExpenses.length<nP)legPortExpenses.push(0);
+  while(legPortExpenses.length>nP)legPortExpenses.pop();
+}
+
+function applyDefaults(){
+  var s=getDefSpeed(),st=getDefStay();
+  legSpeeds=legSpeeds.map(function(){return s;});
+  legPortStays=legPortStays.map(function(){return st;});
+  renderPorts();renderRotTable(currentVessel());
+}
+
+function init(){
+  rebuildVesselDropdown();
+  syncSensRules();
+  renderCargoTab();
+  renderVesselManager();
+}
+
+/* ---- CUSTOM VESSEL ---- */
+function onVesselChange(){
+  var code=document.getElementById('vesselSelect').value;
+  var badge=document.getElementById('vesselBadge');
+  var cf=document.getElementById('customForm');
+  if(code==='__new__'){
+    badge.classList.remove('show');
+    cf.classList.add('show');
+    renderSpdBody();
+    return;
+  }
+  cf.classList.remove('show');
+  if(!code){badge.classList.remove('show');return;}
+  var v=allVessels().find(function(x){return x.code===code;});
+  if(!v){badge.classList.remove('show');return;}
+  document.getElementById('vbName').textContent=v.name;
+  document.getElementById('vbHire').textContent='$'+n(v.hire)+'/day';
+  document.getElementById('vbTeu').textContent=n(v.teu)+' TEU';
+  var mn=v.speeds[0].speed,mx=v.speeds[v.speeds.length-1].speed;
+  document.getElementById('vbSpd').textContent=mn+(mn===mx?'':'-'+mx)+' kn';
+  document.getElementById('vbPts').textContent=v.speeds.length;
+  document.getElementById('mgoFlag').classList.toggle('show',v.speeds.some(function(s){return s.mgo!==null;}));
+  badge.classList.add('show');
+  renderRotTable(v);
+}
+
+function renderSpdBody(){
+  var tbody=document.getElementById('cfSpdBody');
+  tbody.innerHTML=customSpdPoints.map(function(p,i){
+    return '<tr><td><input type="number" class="spd-inp" value="'+p.speed+'" placeholder="13.0" step="0.5" data-idx="'+i+'" data-f="speed" oninput="cfSpdChange(this)"></td>'+
+      '<td><input type="number" class="spd-inp" value="'+p.lsfo+'" placeholder="25.0" step="0.1" data-idx="'+i+'" data-f="lsfo" oninput="cfSpdChange(this)"></td>'+
+      '<td><input type="number" class="spd-inp" value="'+p.mgo+'" placeholder="opt" step="0.1" data-idx="'+i+'" data-f="mgo" oninput="cfSpdChange(this)"></td>'+
+      '<td><button class="rm-spd" onclick="rmSpdPoint('+i+')">x</button></td></tr>';
+  }).join('');
+}
+function cfSpdChange(el){customSpdPoints[parseInt(el.dataset.idx)][el.dataset.f]=el.value;}
+function addSpdPoint(){customSpdPoints.push({speed:'',lsfo:'',mgo:''});renderSpdBody();}
+function rmSpdPoint(i){if(customSpdPoints.length>1)customSpdPoints.splice(i,1);renderSpdBody();}
+
+function saveCustomVessel(){
+  var name=document.getElementById('cfName').value.trim();
+  var teu=parseFloat(document.getElementById('cfTeu').value);
+  var hire=parseFloat(document.getElementById('cfHire').value);
+  if(!name||!teu||!hire){alert('Please fill vessel name, TEU and hire rate.');return;}
+  var speeds=customSpdPoints.filter(function(p){return p.speed&&p.lsfo;}).map(function(p){
+    return {speed:parseFloat(p.speed),lsfo:parseFloat(p.lsfo),mgo:p.mgo?parseFloat(p.mgo):null};
+  }).sort(function(a,b){return a.speed-b.speed;});
+  if(!speeds.length){alert('Add at least one speed-consumption point.');return;}
+  var code='CST'+Date.now().toString().slice(-4);
+  var vessel={name:name,code:code,hire:hire,teu:teu,speeds:speeds,custom:true};
+  customVessels.push(vessel);
+  var sel=document.getElementById('vesselSelect');
+  var idx=sel.options.length-2;
+  var opt=document.createElement('option');
+  opt.value=code;opt.textContent=name+' ('+code+')';
+  sel.insertBefore(opt,sel.options[idx]);
+  sel.value=code;
+  customSpdPoints=[{speed:'',lsfo:'',mgo:''}];
+  document.getElementById('customForm').classList.remove('show');
+  onVesselChange();
+  alert('Vessel "'+name+'" saved successfully!');
+}
+
+/* ---- AUTOCOMPLETE ---- */
+function renderPorts(){
+  var list=document.getElementById('portList');
+  list.innerHTML='';
+  ports.forEach(function(p,i){
+    var rmHtml=ports.length>2?'<button class="rm-btn" onclick="removePort('+i+')">x</button>':'';
+    var row=document.createElement('div');
+    row.className='port-row';
+    row.innerHTML='<span class="port-num">'+(i+1)+'</span>'+
+      '<div class="ac-wrap"><input class="ac-inp" id="aci'+i+'" type="text" placeholder="Search port..." autocomplete="off" value="'+p.name+'" '+
+      'oninput="filterAC('+i+',this.value)" onfocus="filterAC('+i+',this.value)" onblur="hideAC('+i+')">'+
+      '<div class="ac-drop" id="acd'+i+'"></div></div>'+rmHtml;
+    list.appendChild(row);
+  });
+}
+
+function filterAC(i,q){
+  var dd=document.getElementById('acd'+i);
+  if(!dd)return;
+  var ql=q.toLowerCase().trim();
+  if(ql.length<1){dd.style.display='none';return;}
+  var matches=[],j=0;
+  for(;j<PWL.length&&matches.length<12;j++){
+    var p=PWL[j];
+    var nameMatch=p[0].toLowerCase().indexOf(ql)>=0;
+    var isoMatch=p[3]&&p[3].toLowerCase().indexOf(ql)>=0;
+    if(nameMatch||isoMatch)matches.push(j);
+  }
+  if(!matches.length){dd.style.display='none';return;}
+  dd.innerHTML=matches.map(function(idx){
+    var p=PWL[idx];
+    var iso=p[3]?'<span style="font-family:var(--mono);font-size:9px;color:var(--text3);margin-left:5px">'+p[3]+'</span>':'';
+    return '<div class="ac-item" onmousedown="selectPortAC('+i+','+idx+')">'+p[0]+iso+'</div>';
+  }).join('');
+  dd.style.display='block';
+}
+function hideAC(i){setTimeout(function(){var dd=document.getElementById('acd'+i);if(dd)dd.style.display='none';},180);}
+function selectPortAC(portIdx,pwlIdx){
+  var p=PWL[pwlIdx];
+  ports[portIdx].name=p[0];ports[portIdx].lat=p[1];ports[portIdx].lon=p[2];
+  if(portIdx>0&&!ports[portIdx-1].manual)recalcDist(portIdx-1);
+  if(!ports[portIdx].manual)recalcDist(portIdx);
+  var inp=document.getElementById('aci'+portIdx);if(inp)inp.value=p[0];
+  var dd=document.getElementById('acd'+portIdx);if(dd)dd.style.display='none';
+  renderRotTable(currentVessel());
+}
+function addPort(){
+  ports.push({name:'',lat:null,lon:null,dist:0,manual:false});
+  initLegArrays();renderPorts();renderRotTable(currentVessel());
+}
+function removePort(i){
+  if(ports.length<=2)return;
+  ports.splice(i,1);initLegArrays();renderPorts();
+  if(i>0&&i<=ports.length-1)recalcDist(i-1);
+  renderRotTable(currentVessel());
+}
+
+function getRate(vessel,speed,type){
+  var pts=vessel.speeds.filter(function(s){return s[type]!==null;}).sort(function(a,b){return a.speed-b.speed;});
+  if(!pts.length)return 0;
+  var ex=pts.find(function(s){return s.speed===speed;});
+  if(ex)return ex[type];
+  for(var i=0;i<pts.length-1;i++){
+    if(speed>pts[i].speed&&speed<pts[i+1].speed)
+      return pts[i][type]+(pts[i+1][type]-pts[i][type])*(speed-pts[i].speed)/(pts[i+1].speed-pts[i].speed);
+  }
+  return speed<pts[0].speed?pts[0][type]:pts[pts.length-1][type];
+}
+
+function syncFromRotInputs(){
+  for(var i=0;i<ports.length-1;i++){
+    var si=document.getElementById('ls'+i);if(si)legSpeeds[i]=parseFloat(si.value)||getDefSpeed();
+    var di=document.getElementById('di'+i);
+    if(di){var dv=parseFloat(di.value)||0;if(dv!==ports[i].dist){ports[i].dist=dv;ports[i].manual=true;}}
+  }
+  for(var j=0;j<ports.length;j++){
+    var ps=document.getElementById('ps'+j);if(ps)legPortStays[j]=parseFloat(ps.value)||0;
+    var pb=document.getElementById('pb'+j);if(pb)legBufferHrs[j]=parseFloat(pb.value)||0;
+    var pe=document.getElementById('pe'+j);if(pe)legPortExpenses[j]=parseFloat(pe.value)||0;
+  }
+}
+
+/* ---- CARGO TAB ---- */
+function renderCargoTab(){
+  var hasCargo=cargoRows.length>0;
+  var totalBoxes=cargoRows.reduce(function(s,r){return s+(parseFloat(r.boxes)||0);},0);
+  var totalCM=cargoRows.reduce(function(s,r){return s+(parseFloat(r.cm)||0)*(parseFloat(r.boxes)||0);},0);
+  var overrideNotice='<div class="cargo-override-notice'+(hasCargo?'':' hidden')+'">Cargo data active -- overrides sidebar Profitability Inputs for revenue calculation.</div>';
+  var totalBanner=hasCargo?'<div class="cargo-total-banner">'+
+    '<div class="cargo-total-item">Total Boxes: <strong>'+n(totalBoxes)+' TEU</strong></div>'+
+    '<div class="cargo-total-item">Total CM: <strong>'+usd(totalCM)+'</strong></div>'+
+    '<div class="cargo-total-item">Avg CM/box: <strong>'+(totalBoxes>0?usd(totalCM/totalBoxes):'--')+'</strong></div>'+
+  '</div>':'';
+  var tableRows=cargoRows.map(function(r,i){
+    var tcm=(parseFloat(r.cm)||0)*(parseFloat(r.boxes)||0);
+    return '<tr>'+
+      '<td><input class="cargo-cell" value="'+escH(r.pol||'')+'" placeholder="Port Klang" data-ri="'+i+'" data-f="pol" oninput="cargoUpdate(this)"></td>'+
+      '<td><input class="cargo-cell" value="'+escH(r.ts||'')+'" placeholder="(optional)" data-ri="'+i+'" data-f="ts" oninput="cargoUpdate(this)"></td>'+
+      '<td><input class="cargo-cell" value="'+escH(r.pod||'')+'" placeholder="Jeddah" data-ri="'+i+'" data-f="pod" oninput="cargoUpdate(this)"></td>'+
+      '<td><input class="cargo-cell" value="'+escH(r.sizeType||'')+'" placeholder="40HC" data-ri="'+i+'" data-f="sizeType" oninput="cargoUpdate(this)" style="width:70px"></td>'+
+      '<td><input class="cargo-cell num" type="number" value="'+(r.of||'')+'" placeholder="0" step="1" data-ri="'+i+'" data-f="of" oninput="cargoUpdate(this)"></td>'+
+      '<td><input class="cargo-cell num" type="number" value="'+(r.ls||'')+'" placeholder="0" step="1" data-ri="'+i+'" data-f="ls" oninput="cargoUpdate(this)"></td>'+
+      '<td><input class="cargo-cell cm-cell" type="number" value="'+(r.cm||'')+'" placeholder="0" step="1" data-ri="'+i+'" data-f="cm" oninput="cargoUpdate(this)"></td>'+
+      '<td><input class="cargo-cell num" type="number" value="'+(r.boxes||'')+'" placeholder="0" step="1" data-ri="'+i+'" data-f="boxes" oninput="cargoUpdate(this)"></td>'+
+      '<td><input class="cargo-cell ro" readonly value="'+(tcm>0?n(Math.round(tcm)):'')+'"></td>'+
+      '<td><button class="cargo-rm" onclick="removeCargoRow('+i+')">x</button></td>'+
+    '</tr>';
+  }).join('');
+  document.getElementById('cargoContent').innerHTML=
+    '<div class="section-head">Cargo Input -- Port Pair Level</div>'+
+    overrideNotice+
+    '<div class="cargo-mode-toggle">'+
+      '<button class="cargo-mode-btn active" id="modeManual" onclick="setCargoMode(0)">Manual Entry</button>'+
+      '<button class="cargo-mode-btn" id="modePaste" onclick="setCargoMode(1)">Paste from Excel</button>'+
+    '</div>'+
+    '<div class="cargo-paste-area" id="cargoPasteArea">'+
+      '<div class="paste-hint">Copy from Excel and paste below. Expected column order:<br>'+
+      '<strong>POL | T/S Port | POD | Size/Type | Ocean Freight | Local Surcharge | CM ($/box) | Boxes</strong><br>'+
+      'First row can be a header (auto-detected and skipped).</div>'+
+      '<textarea class="paste-box" id="pasteBox" placeholder="Paste Excel data here..."></textarea>'+
+      '<button class="parse-btn" onclick="parseCargoPaste()">Parse &amp; Load Data</button>'+
+    '</div>'+
+    totalBanner+
+    '<div class="cargo-table-wrap"><table class="cargo-table">'+
+      '<thead><tr>'+
+        '<th>POL</th><th>T/S Port</th><th>POD</th><th>Size/Type</th>'+
+        '<th class="num">Ocean Freight ($/box)</th><th class="num">Local Surcharge ($/box)</th>'+
+        '<th class="num">CM ($/box)</th><th class="num">Boxes</th><th class="num">Total CM ($)</th><th></th>'+
+      '</tr></thead>'+
+      '<tbody id="cargoTbody">'+tableRows+'</tbody>'+
+    '</table></div>'+
+    '<div class="cargo-footer">'+
+      '<button class="cargo-add-btn" onclick="addCargoRow()">+ Add row</button>'+
+      '<span style="font-family:var(--mono);font-size:9px;color:var(--text3)">'+
+        (hasCargo?'Total CM: <strong style="color:var(--teal)">'+usd(totalCM)+'</strong>':'No cargo data yet')+
+      '</span>'+
+    '</div>'+
+    '<div class="notes"><strong>Notes:</strong><br>'+
+    '1. CM ($/box) is the Contribution Margin per box -- the net revenue after variable costs, before voyage fixed costs (hire, bunker).<br>'+
+    '2. Total CM = CM x Boxes. This is used as voyage revenue when cargo data is present, overriding sidebar inputs.<br>'+
+    '3. Use "Paste from Excel" to quickly import data from a spreadsheet. Paste your table then click Parse.<br>'+
+    '4. Ocean Freight and Local Surcharge are informational; enter CM directly as your net contribution figure.<br>'+
+    '</div>';
+}
+
+function escH(s){return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
+function setCargoMode(m){
+  document.getElementById('modeManual').classList.toggle('active',m===0);
+  document.getElementById('modePaste').classList.toggle('active',m===1);
+  var pa=document.getElementById('cargoPasteArea');if(pa)pa.classList.toggle('show',m===1);
+}
+function addCargoRow(){cargoRows.push({pol:'',ts:'',pod:'',sizeType:'',of:'',ls:'',cm:'',boxes:''});renderCargoTab();}
+function removeCargoRow(i){cargoRows.splice(i,1);renderCargoTab();}
+function cargoUpdate(el){var i=parseInt(el.dataset.ri);var f=el.dataset.f;if(cargoRows[i])cargoRows[i][f]=el.value;updateCargoTotals();}
+function updateCargoTotals(){
+  var tbody=document.getElementById('cargoTbody');if(!tbody)return;
+  cargoRows.forEach(function(r,i){
+    var tcm=(parseFloat(r.cm)||0)*(parseFloat(r.boxes)||0);
+    var ro=tbody.rows[i];if(!ro)return;
+    var cells=ro.cells;
+    if(cells[8])cells[8].querySelector('input').value=tcm>0?n(Math.round(tcm)):'';
+  });
+}
+function parseCargoPaste(){
+  var raw=document.getElementById('pasteBox').value.trim();
+  if(!raw){alert('Nothing to parse.');return;}
+  var lines=raw.split('\n').map(function(l){return l.trim();}).filter(function(l){return l.length>0;});
+  var firstFields=lines[0].split('\t');
+  var isHeader=isNaN(parseFloat(firstFields[4]))&&isNaN(parseFloat(firstFields[7]));
+  if(isHeader)lines=lines.slice(1);
+  var parsed=lines.map(function(line){
+    var f=line.split('\t');
+    return {pol:f[0]||'',ts:f[1]||'',pod:f[2]||'',sizeType:f[3]||'',of:f[4]||'',ls:f[5]||'',cm:f[6]||'',boxes:f[7]||''};
+  }).filter(function(r){return r.pol||r.pod;});
+  if(!parsed.length){alert('No valid rows found. Check column order.');return;}
+  cargoRows=parsed;
+  renderCargoTab();
+  setCargoMode(0);
+  alert('Loaded '+parsed.length+' row(s) successfully.');
+}
+function getCargoTotal(){
+  var total=cargoRows.reduce(function(s,r){return s+(parseFloat(r.cm)||0)*(parseFloat(r.boxes)||0);},0);
+  return {total:total,hasData:cargoRows.length>0&&total>0};
+}
+
+/* ---- REVENUE ---- */
+function getRevenue(vessel){
+  var cargo=getCargoTotal();
+  if(cargo.hasData){
+    return {total:cargo.total,source:'cargo',hh:{teu:0,rate:0,rev:0,util:100},bh:{teu:0,rate:0,rev:0,util:100},dd:{teu:0,rate:0,rev:0,util:100}};
+  }
+  var hhRev=parseFloat(document.getElementById('hhRev').value)||0;
+  var bhRev=parseFloat(document.getElementById('bhRev').value)||0;
+  var ddRev=parseFloat(document.getElementById('ddRev').value)||0;
+  var _hhu=document.getElementById('hhUtil').value;
+  var _bhu=document.getElementById('bhUtil').value;
+  var _ddu=document.getElementById('ddUtil').value;
+  var hhUtil=(_hhu===''||_hhu===null?100:parseFloat(_hhu))/100;
+  var bhUtil=(_bhu===''||_bhu===null?100:parseFloat(_bhu))/100;
+  var ddUtil=(_ddu===''||_ddu===null?100:parseFloat(_ddu))/100;
+  var teu=vessel.teu;
+  var hhTeu=Math.round(teu*hhUtil),bhTeu=Math.round(teu*bhUtil),ddTeu=Math.round(teu*ddUtil);
+  var hhR=hhTeu*hhRev,bhR=bhTeu*bhRev,ddR=ddTeu*ddRev;
+  return {total:hhR+bhR+ddR,source:'sidebar',hh:{teu:hhTeu,rate:hhRev,rev:hhR,util:Math.round(hhUtil*100)},bh:{teu:bhTeu,rate:bhRev,rev:bhR,util:Math.round(bhUtil*100)},dd:{teu:ddTeu,rate:ddRev,rev:ddR,util:Math.round(ddUtil*100)}};
+}
+
+/* ---- ROTATION TAB ---- */
+function renderRotTable(vessel){
+  initLegArrays();
+  var numLegs=Math.max(0,ports.length-1);
+  if(numLegs===0&&ports.length===0){
+    document.getElementById('rotContent').innerHTML='<div class="placeholder"><div class="placeholder-icon">O</div><div class="placeholder-text">Add ports in sidebar to build rotation</div></div>';
+    return;
+  }
+  var hasVessel=vessel!==null;
+  var hasMgo=hasVessel&&vessel.speeds.some(function(s){return s.mgo!==null;});
+  var lsfoPx=parseFloat(document.getElementById('lsfoPrice').value)||550;
+  var mgoPx=parseFloat(document.getElementById('mgoPrice').value)||750;
+  var totalSeaDays=0,totalPortDays=0,totalBufferDays=0,totalNM=0,totalLsfoMT=0,totalMgoMT=0,totalPortExp=0;
+  var legData=[];
+  for(var i=0;i<numLegs;i++){
+    var spd=legSpeeds[i]||getDefSpeed();
+    var dist=ports[i].dist||0;
+    var sd=dist>0?dist/spd/24:0;
+    var stay=legPortStays[i]||0;
+    var bufHrs=legBufferHrs[i]||0;
+    var bufDays=bufHrs/24;
+    var portExp=legPortExpenses[i]||0;
+    var lsfoMT=hasVessel?getRate(vessel,spd,'lsfo')*sd:0;
+    var mgoMT=hasMgo?getRate(vessel,spd,'mgo')*sd:0;
+    totalSeaDays+=sd;totalPortDays+=stay;totalBufferDays+=bufDays;totalNM+=dist;
+    totalLsfoMT+=lsfoMT;totalMgoMT+=mgoMT;totalPortExp+=portExp;
+    legData.push({from:ports[i].name,to:ports[i+1]?ports[i+1].name:'',dist:dist,manual:ports[i].manual,spd:spd,seaDays:sd,stay:stay,bufHrs:bufHrs,portExp:portExp,lsfoMT:lsfoMT,mgoMT:mgoMT});
+  }
+  var lastStay=legPortStays[ports.length-1]||0;
+  var lastBuf=legBufferHrs[ports.length-1]||0;
+  var lastExp=legPortExpenses[ports.length-1]||0;
+  totalPortDays+=lastStay;totalBufferDays+=lastBuf/24;totalPortExp+=lastExp;
+  var totalDays=totalSeaDays+totalPortDays+totalBufferDays;
+  var hire=hasVessel?vessel.hire*totalDays:0;
+  var bunkerCost=totalLsfoMT*lsfoPx+totalMgoMT*mgoPx;
+  var revData=hasVessel?getRevenue(vessel):{total:0,source:'--'};
+  var revenue=revData.total;
+  var netPL=revenue-hire-bunkerCost-totalPortExp;
+
+  var rows=legData.map(function(l,i){
+    var distCls='rot-edit dist-inp '+(l.manual?'dist-manual':'dist-auto');
+    var revertHidden=l.manual&&ports[i].lat!==null&&ports[i+1]&&ports[i+1].lat!==null?'':'hidden';
+    return '<tr>'+
+      '<td><span class="leg-badge">L'+(i+1)+'</span></td>'+
+      '<td>'+escH(l.from)+'</td>'+
+      '<td style="white-space:nowrap">'+
+        '<input id="di'+i+'" type="number" class="'+distCls+'" value="'+Math.round(l.dist)+'" min="0" step="1" onchange="onDistChange('+i+',this.value)">'+
+        '<button class="revert-btn '+revertHidden+'" id="rv'+i+'" onclick="revertDist('+i+')" title="Revert to Haversine calculation">&#8635; auto</button>'+
+      '</td>'+
+      '<td><input id="ls'+i+'" type="number" class="rot-edit speed-inp" value="'+l.spd.toFixed(1)+'" min="8" max="22" step="0.5" onchange="onLegSpeedChange('+i+',this.value)"></td>'+
+      '<td>'+(l.dist>0?l.seaDays.toFixed(2)+' d':'--')+'</td>'+
+      '<td><input id="ps'+i+'" type="number" class="rot-edit stay-inp" value="'+l.stay.toFixed(1)+'" min="0" step="0.5" onchange="onPortStayChange('+i+',this.value)"></td>'+
+      '<td><input id="pb'+i+'" type="number" class="rot-edit buf-inp" value="'+l.bufHrs.toFixed(1)+'" min="0" step="1" onchange="onBufChange('+i+',this.value)"></td>'+
+      '<td><input id="pe'+i+'" type="number" class="rot-edit exp-inp" value="'+l.portExp.toFixed(0)+'" min="0" step="500" onchange="onPortExpChange('+i+',this.value)"></td>'+
+      '<td class="c-bunk">'+(hasVessel&&l.dist>0?n(l.lsfoMT,1):'--')+'</td>'+
+      (hasMgo?'<td class="c-bunk">'+(l.dist>0?n(l.mgoMT,1):'--')+'</td>':'')+
+    '</tr>';
+  }).join('');
+
+  // ARR row
+  rows+='<tr>'+
+    '<td><span class="leg-badge" style="background:rgba(57,211,83,.1);color:var(--teal);border-color:rgba(57,211,83,.2)">ARR</span></td>'+
+    '<td>'+escH(ports.length>0?ports[ports.length-1].name:'')+'</td>'+
+    '<td style="color:var(--text3)">--</td><td style="color:var(--text3)">--</td><td style="color:var(--text3)">--</td>'+
+    '<td><input id="ps'+(ports.length-1)+'" type="number" class="rot-edit stay-inp" value="'+lastStay.toFixed(1)+'" min="0" step="0.5" onchange="onPortStayChange('+(ports.length-1)+',this.value)"></td>'+
+    '<td><input id="pb'+(ports.length-1)+'" type="number" class="rot-edit buf-inp" value="'+lastBuf.toFixed(1)+'" min="0" step="1" onchange="onBufChange('+(ports.length-1)+',this.value)"></td>'+
+    '<td><input id="pe'+(ports.length-1)+'" type="number" class="rot-edit exp-inp" value="'+lastExp.toFixed(0)+'" min="0" step="500" onchange="onPortExpChange('+(ports.length-1)+',this.value)"></td>'+
+    '<td style="color:var(--text3)">--</td>'+(hasMgo?'<td style="color:var(--text3)">--</td>':'')+
+  '</tr>';
+
+  // Totals row
+  rows+='<tr class="totals-row">'+
+    '<td></td><td><strong style="color:var(--text)">TOTALS</strong></td>'+
+    '<td><strong style="color:var(--amber)">'+n(totalNM)+' nm</strong></td>'+
+    '<td></td>'+
+    '<td><strong>'+totalSeaDays.toFixed(2)+' d</strong></td>'+
+    '<td><strong>'+totalPortDays.toFixed(2)+' d</strong></td>'+
+    '<td><strong style="color:var(--purple)">'+(totalBufferDays*24).toFixed(1)+' hrs</strong></td>'+
+    '<td><strong style="color:var(--red)">'+usd(totalPortExp)+'</strong></td>'+
+    '<td class="c-bunk">'+(hasVessel?'<strong>'+n(totalLsfoMT,1)+' MT</strong>':'--')+'</td>'+
+    (hasMgo?'<td class="c-bunk"><strong>'+n(totalMgoMT,1)+' MT</strong></td>':'')+
+  '</tr>';
+
+  var thead='<thead><tr>'+
+    '<th style="text-align:left">Leg</th>'+
+    '<th style="text-align:left">From</th>'+
+    '<th class="amber">Dist (nm)</th>'+
+    '<th class="teal">Speed (kn)</th>'+
+    '<th>Sea time</th>'+
+    '<th class="teal">Port stay (d)</th>'+
+    '<th style="color:var(--purple)">Buffer (hrs)</th>'+
+    '<th class="red">Port exp ($)</th>'+
+    '<th class="cb">LSFO MT</th>'+
+    (hasMgo?'<th class="cb">MGO MT</th>':'')+
+  '</tr></thead>';
+
+  // Summary row 1
+  var sum1='<div class="rot-summary">'+
+    mkCard('Sea distance',n(totalNM)+' nm',numLegs+' legs','accent')+
+    mkCard('Sea days',totalSeaDays.toFixed(1)+' d','Ocean passage','accent')+
+    mkCard('Port days',totalPortDays.toFixed(1)+' d',ports.length+' calls','amber')+
+    mkCard('Buffer time',(totalBufferDays*24).toFixed(1)+' hrs','Extra at port','purple')+
+    mkCard('Total days',totalDays.toFixed(1)+' d','Sea+port+buffer','green')+
+  '</div>';
+
+  // Summary row 2
+  var plCls=netPL>=0?'teal':'red';
+  var sum2='<div class="rot-summary2">'+
+    mkCard('Charter hire',(hasVessel?usd(hire):'--'),(hasVessel?'$'+n(vessel.hire)+'/d x '+totalDays.toFixed(1)+'d':'Select vessel'),'purple')+
+    mkCard('Bunker (LSFO)',(hasVessel?n(totalLsfoMT,1)+' MT':'--'),(hasVessel?usd(totalLsfoMT*lsfoPx):'--'),'amber')+
+    mkCard('Bunker cost',(hasVessel?usd(bunkerCost):'--'),(hasVessel?'LSFO+MGO':'--'),'amber')+
+    mkCard('Port expenses',usd(totalPortExp),'All port calls','red')+
+    mkCard('Net P&amp;L',(hasVessel?susd(Math.round(netPL)):'--'),(hasVessel?'Revenue - all costs':'--'),plCls)+
+  '</div>';
+
+  document.getElementById('rotContent').innerHTML=
+    '<div class="rot-header-row">'+
+      '<div class="section-head" style="margin:0;border:none;padding:0;">Port Rotation Schedule'+(hasVessel?' -- '+vessel.name:'')+'</div>'+
+      '<button class="recalc-btn" onclick="runSimulation()">Recalculate All Tabs</button>'+
+    '</div>'+
+    '<div style="margin-bottom:10px;font-size:10px;color:var(--text2)">Dist editable -- click &#8635; auto to revert to Haversine. Speed, port stay, buffer and port expenses editable per-leg/port.</div>'+
+    sum1+sum2+
+    '<div class="rot-table-wrap"><table class="rot-table">'+thead+'<tbody>'+rows+'</tbody></table></div>'+
+    '<div class="notes"><strong>Notes:</strong><br>'+
+    '1. <strong>Buffer (hrs)</strong> = extra time at port (congestion, waiting). Added to voyage days.<br>'+
+    '2. <strong>Port exp ($)</strong> = port dues, pilotage, towage and agency fees per port call.<br>'+
+    '3. &#8635; auto button reverts distance to Haversine great-circle (appears when manually overridden).<br>'+
+    '4. P&amp;L uses cargo CM total if cargo data is entered in Cargo Input tab, otherwise sidebar values.<br>'+
+    '</div>';
+}
+
+function onDistChange(i,val){ports[i].dist=parseFloat(val)||0;ports[i].manual=true;renderRotTable(currentVessel());}
+function revertDist(i){
+  ports[i].manual=false;
+  if(ports[i].lat!==null&&ports[i+1]&&ports[i+1].lat!==null)
+    ports[i].dist=haversine(ports[i].lat,ports[i].lon,ports[i+1].lat,ports[i+1].lon);
+  renderRotTable(currentVessel());
+}
+function onLegSpeedChange(i,val){legSpeeds[i]=parseFloat(val)||getDefSpeed();renderRotTable(currentVessel());}
+function onPortStayChange(i,val){legPortStays[i]=parseFloat(val)||0;renderRotTable(currentVessel());}
+function onBufChange(i,val){legBufferHrs[i]=parseFloat(val)||0;renderRotTable(currentVessel());}
+function onPortExpChange(i,val){legPortExpenses[i]=parseFloat(val)||0;renderRotTable(currentVessel());}
+
+/* ---- MAIN SIMULATION ---- */
+function runSimulation(){
+  syncFromRotInputs();
+  var code=document.getElementById('vesselSelect').value;
+  if(!code||code==='__new__'){alert('Please select a vessel.');return;}
+  var vessel=allVessels().find(function(v){return v.code===code;});
+  if(!vessel)return;
+  initLegArrays();
+  if(ports.length<2){alert('Add at least 2 ports.');return;}
+  var legs=[];
+  for(var i=0;i<ports.length-1;i++){
+    if(!ports[i].dist||ports[i].dist<=0){alert('No distance for leg '+(i+1)+'. Select ports or enter distance.');return;}
+    legs.push({from:ports[i].name,to:ports[i+1].name,dist:ports[i].dist,speed:legSpeeds[i]||getDefSpeed()});
+  }
+  var totalNM=legs.reduce(function(s,l){return s+l.dist;},0);
+  var totalSeaDays=legs.reduce(function(s,l){return s+l.dist/l.speed/24;},0);
+  var totalPortDays=legPortStays.reduce(function(s,v){return s+v;},0);
+  var totalBufferDays=legBufferHrs.reduce(function(s,v){return s+v/24;},0);
+  var totalPortExp=legPortExpenses.reduce(function(s,v){return s+v;},0);
+  var totalDays=totalSeaDays+totalPortDays+totalBufferDays;
+  var lsfoPx=parseFloat(document.getElementById('lsfoPrice').value)||550;
+  var mgoPx=parseFloat(document.getElementById('mgoPrice').value)||750;
+  var hsfoPx=parseFloat(document.getElementById('hsfoPrice').value)||450;
+  var sensMin=parseFloat(document.getElementById('sensMin').value)||300;
+  var sensMax=parseFloat(document.getElementById('sensMax').value)||800;
+  var sensSteps=Math.max(3,Math.min(20,parseInt(document.getElementById('sensSteps').value)||9));
+  var hasMgo=vessel.speeds.some(function(s){return s.mgo!==null;});
+  var hire=vessel.hire;
+  var revData=getRevenue(vessel);
+  var revenue=revData.total;
+  var speedList=vessel.speeds.map(function(s){return s.speed;}).sort(function(a,b){return a-b;});
+  var midIdx=Math.floor(speedList.length/2);
+  var actualLsfoMT=0,actualMgoMT=0;
+  legs.forEach(function(l){var sd=l.dist/l.speed/24;actualLsfoMT+=getRate(vessel,l.speed,'lsfo')*sd;actualMgoMT+=hasMgo?getRate(vessel,l.speed,'mgo')*sd:0;});
+  var actualBunker=actualLsfoMT*lsfoPx+actualMgoMT*mgoPx;
+  var actualHire=hire*totalDays;
+  var actualTotal=actualBunker+actualHire+totalPortExp;
+  var actualNet=revenue-actualTotal;
+  var actualPpd=actualNet/totalDays;
+  var actualPph=(revenue-actualBunker)/totalDays;
+  costRows=speedList.map(function(spd){
+    var sd=totalNM/spd/24,td=sd+totalPortDays+totalBufferDays;
+    var lm=getRate(vessel,spd,'lsfo')*sd,mm=hasMgo?getRate(vessel,spd,'mgo')*sd:0;
+    var bk=lm*lsfoPx+mm*mgoPx,hc=hire*td,tot=bk+hc+totalPortExp,net=revenue-tot;
+    return {spd:spd,seaDays:sd,totalDays:td,lsfoMT:lm,mgoMT:mm,bunker:bk,hire:hc,portExp:totalPortExp,total:tot,net:net,ppd:net/td,pph:(revenue-bk)/td};
+  });
+  var midRow=costRows[midIdx];
+  var maxCost=Math.max.apply(null,costRows.map(function(r){return r.total;}));
+  var maxDays=Math.max.apply(null,costRows.map(function(r){return r.totalDays;}));
+  var sensLsfoPrices=[];
+  for(var si=0;si<sensSteps;si++) sensLsfoPrices.push(sensMin+si*(sensMax-sensMin)/(sensSteps-1));
+  var sensMatrix=sensLsfoPrices.map(function(lp){
+    var mp=lp+400;
+    var cols=speedList.map(function(spd){
+      var sd=totalNM/spd/24,td=sd+totalPortDays+totalBufferDays;
+      var lm=getRate(vessel,spd,'lsfo')*sd,mm=hasMgo?getRate(vessel,spd,'mgo')*sd:0;
+      var bk=lm*lp+mm*mp,hc=hire*td,net=revenue-bk-hc-totalPortExp;
+      return {ppd:net/td,pph:(revenue-bk)/td};
+    });
+    return {lsfo:lp,hsfo:Math.max(0,lp-100),mgo:mp,cols:cols};
+  });
+  var beLsfoMT=getRate(vessel,midRow.spd,'lsfo')*midRow.seaDays;
+  var beMgoMT=hasMgo?getRate(vessel,midRow.spd,'mgo')*midRow.seaDays:0;
+  var beDenom=beLsfoMT+beMgoMT;
+  var breakEvenLsfo=beDenom>0?(revenue-beMgoMT*400-hire*midRow.totalDays-totalPortExp)/beDenom:null;
+  renderRotTable(vessel);
+  renderRevSenTab();
+
+  /* COST TAB */
+  document.getElementById('costContent').innerHTML=
+    '<div class="section-head">Route Summary -- '+vessel.name+'</div>'+
+    '<div class="cards-row cards-5">'+
+      mkCard('Sea distance',n(totalNM)+' nm',legs.length+' legs','accent')+
+      mkCard('Voyage days',totalDays.toFixed(1)+' d',totalSeaDays.toFixed(1)+' sea + '+totalPortDays.toFixed(1)+' port','accent')+
+      mkCard('Buffer time',(totalBufferDays*24).toFixed(1)+' hrs','Added to voyage days','purple')+
+      mkCard('Charter hire',usd(actualHire),'$'+n(hire)+'/d x '+totalDays.toFixed(1)+'d','purple')+
+      mkCard('Actual voyage cost',usd(actualTotal),'Incl. bunker+hire+port exp','green')+
+    '</div>'+
+    '<div class="section-head">Leg Breakdown</div>'+
+    '<div class="table-wrap">'+legTable(legs,totalNM)+'</div>'+
+    '<div class="section-head">Speed Sweep</div>'+
+    '<div class="table-wrap">'+costTable(costRows,midIdx,hasMgo)+'</div>'+
+    '<div class="chart-grid">'+costChart(costRows,midIdx,maxCost)+daysChart(costRows,midIdx,maxDays,totalPortDays+totalBufferDays)+'</div>'+
+    '<div class="notes"><strong>Notes:</strong><br>'+
+    '1. Actual cost uses per-leg speeds. Speed sweep uses uniform speed for comparison.<br>'+
+    '2. Port expenses of '+usd(totalPortExp)+' included in all cost figures.<br>'+
+    '3. Revenue source: '+(revData.source==='cargo'?'Cargo Input tab ('+usd(revenue)+' total CM)':'Sidebar profitability inputs ('+usd(revenue)+')')+'.<br>'+
+    '</div>';
+
+  /* PROFIT TAB */
+  var revDesc='';
+  if(revData.source==='cargo'){
+    var ttlBoxes=cargoRows.reduce(function(s,r){return s+(parseFloat(r.boxes)||0);},0);
+    revDesc='<div class="info-box"><strong>Revenue (from Cargo Input tab):</strong><br>'+
+      'Total boxes: '+n(ttlBoxes)+' | Total CM: <strong>'+usd(revenue)+'</strong></div>';
+  } else {
+    revDesc='<div class="info-box"><strong>Revenue breakdown (sidebar inputs):</strong><br>'+
+      'Headhaul: '+n(revData.hh.teu)+' TEU ('+revData.hh.util+'%) x $'+n(revData.hh.rate)+' = <strong>'+usd(revData.hh.rev)+'</strong><br>'+
+      'Backhaul: '+n(revData.bh.teu)+' TEU ('+revData.bh.util+'%) x $'+n(revData.bh.rate)+' = <strong>'+usd(revData.bh.rev)+'</strong><br>'+
+      'Double Dip: '+n(revData.dd.teu)+' TEU ('+revData.dd.util+'%) x $'+n(revData.dd.rate)+' = <strong>'+usd(revData.dd.rev)+'</strong><br>'+
+      'Total: <strong>'+usd(revenue)+'</strong></div>';
+  }
+  document.getElementById('profitContent').innerHTML=
+    '<div class="section-head">Profitability Analysis -- '+vessel.name+'</div>'+
+    revDesc+
+    '<div class="cards-row cards-4">'+
+      mkCard('Total revenue',usd(revenue),(revData.source==='cargo'?'From cargo data':'All 3 streams'),'teal')+
+      mkCard('Net voyage P&amp;L',susd(Math.round(actualNet)),'After all costs',actualNet>=0?'green':'red')+
+      mkCard('Profit/day',susd(Math.round(actualPpd))+'/d','After hire+bunker+port exp',actualPpd>=0?'teal':'red')+
+      mkCard('P/day+hire',susd(Math.round(actualPph))+'/d','Before hire',actualPph>=0?'teal':'amber')+
+    '</div>'+
+    '<div class="section-head">Speed Sweep -- Profitability</div>'+
+    '<div class="table-wrap">'+profTable(costRows,midIdx,revenue)+'</div>'+
+    '<div class="chart-grid">'+profitChart(costRows,midIdx,revenue)+pdayChart(costRows,midIdx)+'</div>'+
+    '<div class="notes"><strong>Definitions:</strong><br>'+
+    '<strong>Profit/day</strong> = (Revenue - Bunker - Hire - Port expenses) / Total days.<br>'+
+    '<strong>P/day+hire</strong> = (Revenue - Bunker) / Total days -- before hire.<br>'+
+    'Port expenses: '+usd(totalPortExp)+' (fixed across all speed scenarios).<br>'+
+    '</div>';
+
+  /* SENS TAB */
+  var beText=breakEvenLsfo!==null&&breakEvenLsfo>0?
+    'Break-even LSFO at mid speed ('+midRow.spd.toFixed(1)+' kn): <strong>$'+n(Math.round(breakEvenLsfo))+'/MT</strong>':
+    'Break-even LSFO could not be calculated.';
+  document.getElementById('sensContent').innerHTML=
+    '<div class="section-head">Bunker Price Sensitivity -- '+vessel.name+'</div>'+
+    '<div class="sens-info-box">HSFO = LSFO - $100 | MGO = LSFO + $400. Revenue = '+usd(revenue)+'. Port exp = '+usd(totalPortExp)+'.</div>'+
+    '<div class="be-banner">'+beText+'</div>'+
+    '<div class="section-head">Profit/day -- Bunker price (rows) x Speed (columns)</div>'+
+    '<div class="table-wrap">'+sensTable(sensMatrix,speedList,breakEvenLsfo,'ppd')+'</div>'+
+    '<div class="section-head">P/day+hire -- Bunker price (rows) x Speed (columns)</div>'+
+    '<div class="table-wrap">'+sensTable(sensMatrix,speedList,breakEvenLsfo,'pph')+'</div>'+
+    '<div class="section-head">Mid-speed Profit/day vs LSFO Price ('+midRow.spd.toFixed(1)+' kn)</div>'+
+    '<div class="chart-grid"><div style="grid-column:1/-1">'+sensMidChart(sensMatrix,midIdx,breakEvenLsfo)+'</div></div>'+
+    '<div class="notes"><strong>Notes:</strong><br>'+
+    '1. Green = profitable, red = loss-making. Port expenses '+usd(totalPortExp)+' included.<br>'+
+    '2. Rows = LSFO steps, columns = TCD speed points. Buffer days included in voyage days.<br>'+
+    '</div>';
+}
+
+function heatClass(v,maxAbs){
+  if(maxAbs===0)return '';
+  var r=Math.abs(v)/maxAbs;
+  if(v>=0)return r>0.66?'heat-pos-hi':r>0.33?'heat-pos-md':'heat-pos-lo';
+  return r>0.66?'heat-neg-hi':r>0.33?'heat-neg-md':'heat-neg-lo';
+}
+function sensTable(sensMatrix,speedList,bePrice,field){
+  var allVals=[];
+  sensMatrix.forEach(function(row){row.cols.forEach(function(c){allVals.push(Math.abs(c[field]));});});
+  var maxAbs=Math.max.apply(null,allVals)||1;
+  var gap=sensMatrix.length>1?Math.abs(sensMatrix[1].lsfo-sensMatrix[0].lsfo)/2:25;
+  var hdr='<thead><tr><th style="text-align:left">LSFO ($/MT)</th><th class="cs">HSFO</th><th class="cs">MGO</th>'+
+    speedList.map(function(s){return '<th class="cp">'+s.toFixed(1)+'kn</th>';}).join('')+'</tr></thead>';
+  var body='<tbody>'+sensMatrix.map(function(row,ri){
+    var isBe=bePrice!==null&&Math.abs(row.lsfo-bePrice)<gap;
+    return '<tr class="'+(isBe?'mid':ri%2===0?'sens-even':'')+'">'+ 
+      '<td style="text-align:left">'+(isBe?'<span class="cell-pill pill-be">$'+n(Math.round(row.lsfo))+'</span>':'<strong>$'+n(Math.round(row.lsfo))+'</strong>')+'</td>'+
+      '<td style="color:var(--text3)">$'+n(Math.round(row.hsfo))+'</td>'+
+      '<td style="color:var(--text3)">$'+n(Math.round(row.mgo))+'</td>'+
+      row.cols.map(function(c){var v=c[field];return '<td class="'+heatClass(v,maxAbs)+'">'+(v>=0?'+':'')+usd(Math.round(v))+'</td>';}).join('')+
+    '</tr>';
+  }).join('')+'</tbody>';
+  return '<table style="min-width:'+(350+speedList.length*75)+'px">'+hdr+body+'</table>';
+}
+function sensMidChart(sensMatrix,midIdx,bePrice){
+  var vals=sensMatrix.map(function(r){return r.cols[midIdx].ppd;});
+  var maxAbs=Math.max.apply(null,vals.map(Math.abs))||1;
+  var gap=sensMatrix.length>1?Math.abs(sensMatrix[1].lsfo-sensMatrix[0].lsfo)/2:25;
+  var bars=sensMatrix.map(function(row){
+    var v=row.cols[midIdx].ppd,pos=v>=0;
+    var pct=(Math.abs(v)/maxAbs*47).toFixed(1);
+    var isBe=bePrice!==null&&Math.abs(row.lsfo-bePrice)<gap;
+    return '<div class="bar-row"><span class="bar-lbl wide">$'+n(Math.round(row.lsfo))+'</span>'+
+      '<div class="bar-track" style="position:relative">'+
+        '<div style="width:50%;height:100%;display:flex;justify-content:flex-end">'+(!pos?'<div class="bar-seg" style="width:'+(pct*2)+'%;background:'+(isBe?'var(--amber)':'rgba(248,81,73,.5)')+'"></div>':'')+'</div>'+
+        '<div style="width:1px;background:var(--border2);height:100%;flex-shrink:0"></div>'+
+        '<div style="width:50%;height:100%;display:flex">'+(pos?'<div class="bar-seg" style="width:'+(pct*2)+'%;background:'+(isBe?'var(--accent)':'rgba(57,211,83,.5)')+'"></div>':'')+'</div>'+
+      '</div>'+
+      '<span class="bar-val '+(pos?'pos':'neg')+'">'+susd(Math.round(v))+'/d</span></div>';
+  }).join('');
+  return '<div class="chart-box" style="max-width:100%"><div class="chart-title">Profit/day at mid speed vs LSFO price</div>'+
+    '<div class="legend"><div class="leg-item"><div class="leg-dot" style="background:var(--teal)"></div>Profitable</div>'+
+    '<div class="leg-item"><div class="leg-dot" style="background:var(--red)"></div>Loss-making</div></div>'+bars+'</div>';
+}
+function mkCard(lbl,val,sub,cls){
+  var cc={green:'green',teal:'teal',purple:'purple',accent:'accent',red:'red',amber:'amber'};
+  var brd=cls==='green'||cls==='teal'?'hi':cls==='purple'?'lo':cls==='amber'?'warn':cls==='red'?'lo':'';
+  return '<div class="card '+brd+'"><div class="card-lbl">'+lbl+'</div><div class="card-val '+(cc[cls]||'')+'">'+val+'</div><div class="card-sub">'+sub+'</div></div>';
+}
+function legTable(legs,totalNM){
+  return '<table style="min-width:480px"><thead><tr><th style="text-align:left">#</th><th style="text-align:left">From</th><th style="text-align:left">To</th><th>Speed</th><th>Distance</th><th>%</th></tr></thead><tbody>'+
+    legs.map(function(l,i){return '<tr><td style="text-align:left;color:var(--text3)">'+(i+1)+'</td><td style="text-align:left">'+escH(l.from)+'</td><td style="text-align:left">'+escH(l.to)+'</td><td class="c-be">'+l.speed.toFixed(1)+' kn</td><td>'+n(l.dist)+' nm</td><td style="color:var(--text2)">'+(l.dist/totalNM*100).toFixed(1)+'%</td></tr>';}).join('')+
+    '<tr style="border-top:1px solid var(--border2)"><td colspan="4" style="text-align:left"><strong>Total</strong></td><td><strong>'+n(totalNM)+' nm</strong></td><td></td></tr></tbody></table>';
+}
+function costTable(rows,midIdx,hasMgo){
+  return '<table style="min-width:600px"><thead><tr><th style="text-align:left">Speed</th><th>Sea days</th><th>Total days</th><th class="cb">LSFO MT</th>'+(hasMgo?'<th class="cb">MGO MT</th>':'')+'<th class="cb">Bunker</th><th class="ch">Hire</th><th class="cs">Port exp</th><th class="ct">Total</th><th class="ct">$/day</th></tr></thead><tbody>'+
+    rows.map(function(r,i){
+      var isMid=i===midIdx;
+      var tag=i===0?'<span class="tag tag-g">SLOW</span>':i===rows.length-1?'<span class="tag tag-a">FAST</span>':isMid?'<span class="tag tag-c">MID</span>':'';
+      return '<tr'+(isMid?' class="mid"':'')+'><td style="text-align:left">'+r.spd.toFixed(1)+' kn'+tag+'</td><td>'+r.seaDays.toFixed(1)+'</td><td>'+r.totalDays.toFixed(1)+'</td>'+
+        '<td class="c-bunk">'+n(r.lsfoMT,0)+'</td>'+(hasMgo?'<td class="c-bunk">'+n(r.mgoMT,0)+'</td>':'')+
+        '<td class="c-bunk">'+usd(r.bunker)+'</td><td class="c-hire">'+usd(r.hire)+'</td><td style="color:var(--red)">'+usd(r.portExp)+'</td>'+
+        '<td class="c-tot">'+usd(r.total)+'</td><td style="color:var(--text2)">'+usd(r.total/r.totalDays)+'</td></tr>';
+    }).join('')+'</tbody></table>';
+}
+function profTable(rows,midIdx,revenue){
+  return '<table style="min-width:750px"><thead><tr><th style="text-align:left">Speed</th><th>Total days</th><th class="cb">Bunker</th><th class="ch">Hire</th><th class="cs">Port exp</th><th class="ct">Total cost</th><th class="ct">Revenue</th><th class="cp">Net P&amp;L</th><th class="cp">P/day</th><th class="cp">P/day+hire</th><th>Save</th></tr></thead><tbody>'+
+    rows.map(function(r,i){
+      var isMid=i===midIdx;
+      var tag=i===0?'<span class="tag tag-g">SLOW</span>':i===rows.length-1?'<span class="tag tag-a">FAST</span>':isMid?'<span class="tag tag-c">MID</span>':'';
+      var pc=r.net>=0?'c-prof':'c-neg',pdc=r.ppd>=0?'c-prof':'c-neg',phc=r.pph>=0?'c-prof':'c-neg';
+      return '<tr'+(isMid?' class="mid"':'')+'><td style="text-align:left">'+r.spd.toFixed(1)+' kn'+tag+'</td><td>'+r.totalDays.toFixed(1)+'</td>'+
+        '<td class="c-bunk">'+usd(r.bunker)+'</td><td class="c-hire">'+usd(r.hire)+'</td><td style="color:var(--red)">'+usd(r.portExp)+'</td>'+
+        '<td class="c-tot">'+usd(r.total)+'</td><td class="c-tot">'+usd(revenue)+'</td>'+
+        '<td class="'+pc+'">'+susd(r.net)+'</td><td class="'+pdc+'">'+susd(r.ppd)+'/d</td><td class="'+phc+'">'+susd(r.pph)+'/d</td>'+
+        '<td style="padding:4px 8px"><button class="save-hist-btn" onclick="saveVersion(costRows['+i+'])">Save to History</button></td></tr>';
+    }).join('')+'</tbody></table>';
+}
+function costChart(rows,midIdx,maxCost){
+  var bars=rows.map(function(r,i){
+    var isMid=i===midIdx,hPct=(r.hire/maxCost*100).toFixed(1),bPct=(r.bunker/maxCost*100).toFixed(1),pPct=(r.portExp/maxCost*100).toFixed(1);
+    return '<div class="bar-row"><span class="bar-lbl">'+r.spd.toFixed(1)+'</span>'+
+      '<div class="bar-track"><div class="bar-seg" style="width:'+hPct+'%;background:'+(isMid?'var(--purple)':'rgba(188,140,255,.3)')+'"></div>'+
+      '<div class="bar-seg" style="width:'+bPct+'%;background:'+(isMid?'var(--amber)':'rgba(210,153,34,.3)')+'"></div>'+
+      '<div class="bar-seg" style="width:'+pPct+'%;background:'+(isMid?'var(--red)':'rgba(248,81,73,.2)')+'"></div></div>'+
+      '<span class="bar-val neu">'+usd(r.total)+'</span></div>';
+  }).join('');
+  return '<div class="chart-box"><div class="chart-title">Total cost by speed</div><div class="legend"><div class="leg-item"><div class="leg-dot" style="background:var(--purple)"></div>Hire</div><div class="leg-item"><div class="leg-dot" style="background:var(--amber)"></div>Bunker</div><div class="leg-item"><div class="leg-dot" style="background:var(--red)"></div>Port exp</div></div>'+bars+'</div>';
+}
+function daysChart(rows,midIdx,maxDays,fixedDays){
+  var bars=rows.map(function(r,i){
+    var isMid=i===midIdx,sPct=(r.seaDays/maxDays*100).toFixed(1),pPct=(fixedDays/maxDays*100).toFixed(1);
+    return '<div class="bar-row"><span class="bar-lbl">'+r.spd.toFixed(1)+'</span>'+
+      '<div class="bar-track"><div class="bar-seg" style="width:'+sPct+'%;background:'+(isMid?'var(--accent)':'rgba(0,212,255,.28)')+'"></div>'+
+      '<div class="bar-seg" style="width:'+pPct+'%;background:var(--border2)"></div></div>'+
+      '<span class="bar-val neu">'+r.totalDays.toFixed(1)+'d</span></div>';
+  }).join('');
+  return '<div class="chart-box"><div class="chart-title">Voyage days by speed</div><div class="legend"><div class="leg-item"><div class="leg-dot" style="background:var(--accent)"></div>Sea</div><div class="leg-item"><div class="leg-dot" style="background:var(--border2)"></div>Port+buffer</div></div>'+bars+'</div>';
+}
+function profitChart(rows,midIdx,revenue){
+  var revBase=Math.max(Math.max.apply(null,rows.map(function(r){return Math.abs(r.net);})),revenue)||1;
+  var bars=rows.map(function(r,i){
+    var isMid=i===midIdx,pos=r.net>=0,rPct=(revenue/revBase*100).toFixed(1);
+    return '<div class="bar-row"><span class="bar-lbl">'+r.spd.toFixed(1)+'</span>'+
+      '<div class="bar-track"><div class="bar-seg" style="width:'+rPct+'%;background:'+(isMid?'rgba(57,211,83,.45)':'rgba(57,211,83,.15)')+'"></div></div>'+
+      '<span class="bar-val '+(pos?'pos':'neg')+'">'+susd(Math.round(r.net))+'</span></div>';
+  }).join('');
+  return '<div class="chart-box"><div class="chart-title">Net P&L by speed</div><div class="legend"><div class="leg-item"><div class="leg-dot" style="background:var(--green)"></div>Revenue bar | value = net P&L</div></div>'+bars+'</div>';
+}
+function pdayChart(rows,midIdx){
+  var maxAbs=Math.max.apply(null,rows.map(function(r){return Math.max(Math.abs(r.ppd),Math.abs(r.pph),1);}))||1;
+  var bars=rows.map(function(r,i){
+    var isMid=i===midIdx,pos=r.ppd>=0,p1=(Math.abs(r.ppd)/maxAbs*50).toFixed(1),p2=(Math.abs(r.pph)/maxAbs*50).toFixed(1);
+    return '<div class="bar-row"><span class="bar-lbl">'+r.spd.toFixed(1)+'</span>'+
+      '<div class="bar-track"><div class="bar-seg" style="width:'+p2+'%;background:'+(isMid?'rgba(0,212,255,.6)':'rgba(0,212,255,.2)')+'"></div>'+
+      '<div class="bar-seg" style="width:'+p1+'%;background:'+(pos?(isMid?'var(--teal)':'rgba(57,211,83,.3)'):(isMid?'var(--red)':'rgba(248,81,73,.3)'))+'"></div></div>'+
+      '<span class="bar-val '+(pos?'pos':'neg')+'">'+susd(Math.round(r.ppd))+'/d</span></div>';
+  }).join('');
+  return '<div class="chart-box"><div class="chart-title">Profit per day by speed</div><div class="legend"><div class="leg-item"><div class="leg-dot" style="background:var(--accent)"></div>P/day+hire</div><div class="leg-item"><div class="leg-dot" style="background:var(--teal)"></div>Profit/day</div></div>'+bars+'</div>';
+}
+
+/* ============================================================
+   VESSEL MANAGER
+   ============================================================ */
+var vmSelectedCode = null;
+var vmEditSpd = [];   // working copy of speed points for detail editor
+var vmFilter = '';
+
+function vmAllVessels() { return allVessels(); }
+
+function rebuildVesselDropdown() {
+  var sel = document.getElementById('vesselSelect');
+  var cur = sel.value;
+  sel.innerHTML = '<option value="">-- Select vessel --</option>';
+  VESSELS.forEach(function(v) {
+    var o = document.createElement('option');
+    o.value = v.code; o.textContent = v.name + ' (' + v.code + ')';
+    sel.appendChild(o);
+  });
+  var sep = document.createElement('option'); sep.disabled = true;
+  sep.textContent = '-- Custom Vessels --'; sel.appendChild(sep);
+  customVessels.forEach(function(v) {
+    var o = document.createElement('option');
+    o.value = v.code; o.textContent = v.name + ' (' + v.code + ')';
+    sel.appendChild(o);
+  });
+  var addOpt = document.createElement('option');
+  addOpt.value = '__new__'; addOpt.textContent = '+ Add New Vessel Manually';
+  sel.appendChild(addOpt);
+  sel.value = cur || '';
+}
+
+function renderVesselManager() {
+  var vessels = vmAllVessels();
+  var q = vmFilter.toLowerCase();
+  var filtered = q ? vessels.filter(function(v) {
+    return v.name.toLowerCase().indexOf(q) >= 0 || v.code.toLowerCase().indexOf(q) >= 0;
+  }) : vessels;
+
+  var rows = filtered.map(function(v) {
+    var hasMgo = v.speeds.some(function(s) { return s.mgo !== null; });
+    var isCustom = !!v.custom;
+    var isSel = v.code === vmSelectedCode;
+    return '<tr class="' + (isSel ? 'selected ' : '') + (isCustom ? 'custom-row' : '') + '" onclick="vmSelectVessel(\'' + v.code + '\')">' +
+      '<td>' + escH(v.name) + '</td>' +
+      '<td><span class="vm-badge ' + (isCustom ? 'custom' : 'builtin') + '">' + (isCustom ? 'CUSTOM' : 'BUILT-IN') + '</span></td>' +
+      '<td>' + escH(v.code) + '</td>' +
+      '<td class="num">$' + n(v.hire) + '</td>' +
+      '<td class="num">' + n(v.teu) + '</td>' +
+      '<td class="num">' + v.speeds[0].speed.toFixed(1) + ' ? ' + v.speeds[v.speeds.length-1].speed.toFixed(1) + ' kn</td>' +
+      '<td class="num">' + v.speeds.length + '</td>' +
+      '<td class="muted">' + (hasMgo ? 'LSFO + MGO' : 'LSFO') + '</td>' +
+    '</tr>';
+  }).join('');
+
+  // Detail editor
+  var det = '';
+  if (vmSelectedCode) {
+    var v = vmAllVessels().find(function(x) { return x.code === vmSelectedCode; });
+    if (v) {
+      var spdRows = vmEditSpd.map(function(p, i) {
+        return '<tr>' +
+          '<td><input class="vm-spd-inp" type="number" value="' + p.speed + '" placeholder="13.0" step="0.5" data-si="' + i + '" data-sf="speed" oninput="vmSpdInp(this)"></td>' +
+          '<td><input class="vm-spd-inp" type="number" value="' + p.lsfo + '" placeholder="25.0" step="0.1" data-si="' + i + '" data-sf="lsfo" oninput="vmSpdInp(this)"></td>' +
+          '<td><input class="vm-spd-inp" type="number" value="' + (p.mgo !== null ? p.mgo : '') + '" placeholder="?" step="0.1" data-si="' + i + '" data-sf="mgo" oninput="vmSpdInp(this)"></td>' +
+          '<td><button class="vm-spd-rm" onclick="vmRmSpd(' + i + ')">x</button></td>' +
+        '</tr>';
+      }).join('');
+      var isCustom = !!v.custom;
+      det = '<div class="vm-detail show">' +
+        '<div class="vm-detail-head">' +
+          '<div class="vm-detail-title">' + escH(v.name) + ' <span class="vm-badge ' + (isCustom?'custom':'builtin') + '">' + v.code + '</span></div>' +
+          '<div style="display:flex;gap:6px">' +
+            (isCustom ? '<button class="vm-btn red" onclick="vmDeleteVessel()">Delete vessel</button>' : '') +
+            '<button class="vm-btn" onclick="vmCloseDetail()">Close</button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="vm-detail-grid">' +
+          '<div class="vm-field"><label>Vessel Name</label><input id="vmeName" type="text" value="' + escH(v.name) + '" ' + (isCustom?'':'readonly') + '></div>' +
+          '<div class="vm-field"><label>Code</label><input id="vmeCode" type="text" value="' + escH(v.code) + '" readonly></div>' +
+          '<div class="vm-field"><label>TEU Capacity</label><input id="vmeTeu" type="number" value="' + v.teu + '" ' + (isCustom?'':'readonly') + '></div>' +
+          '<div class="vm-field"><label>Hire ($/day)</label><input id="vmeHire" type="number" value="' + v.hire + '" ' + (isCustom?'':'readonly') + '></div>' +
+        '</div>' +
+        '<div class="vm-spd-wrap">' +
+          '<div class="vm-spd-label">Speed ? Consumption Table</div>' +
+          '<table class="vm-spd-table"><thead><tr>' +
+            '<th style="text-align:left">Speed (kn)</th><th>LSFO (MT/d)</th><th>MGO (MT/d)</th><th></th>' +
+          '</tr></thead><tbody>' + spdRows + '</tbody></table>' +
+          (isCustom ? '<button class="vm-add-spd" onclick="vmAddSpd()">+ Add speed point</button>' : '') +
+        '</div>' +
+        '<div class="vm-detail-actions">' +
+          (isCustom ? '<button class="vm-btn green" onclick="vmSaveDetail()">Save changes</button>' : '') +
+          '<button class="vm-btn accent" onclick="vmUseVessel()">Use this vessel</button>' +
+        '</div>' +
+      '</div>';
+    }
+  }
+
+  var summary = filtered.length + ' vessel' + (filtered.length !== 1 ? 's' : '') +
+    ' (' + filtered.filter(function(v){return !v.custom;}).length + ' built-in, ' +
+    filtered.filter(function(v){return !!v.custom;}).length + ' custom)';
+
+  document.getElementById('vmContent').innerHTML =
+    '<div class="section-head">Vessel Manager</div>' +
+    '<div class="vm-toolbar">' +
+      '<button class="vm-btn green" onclick="vmAddNew()">+ New vessel</button>' +
+      '<button class="vm-btn accent" onclick="vmImportClick()">Import from Excel</button>' +
+      '<button class="vm-btn amber" onclick="vmExport()">Export to Excel</button>' +
+      '<input type="file" id="vmFileInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="vmImportFile(this)">' +
+      '<div class="vm-spacer"></div>' +
+      '<input class="vm-search" placeholder="Search vessels..." value="' + escH(vmFilter) + '" oninput="vmSearch(this.value)">' +
+    '</div>' +
+    '<div class="vm-format-box">' +
+      '<strong>Excel import format:</strong> Each row = one speed point. ' +
+      'Required columns: <strong>Vessel Name | Code | TEU | Hire ($/day) | Speed (kn) | LSFO (MT/day) | MGO (MT/day)</strong>. ' +
+      'Leave MGO blank if vessel uses LSFO only. Multiple rows with the same vessel code are merged into one vessel.' +
+    '</div>' +
+    det +
+    '<div class="vm-table-wrap"><table class="vm-table">' +
+      '<thead><tr>' +
+        '<th>Vessel Name</th><th>Type</th><th>Code</th>' +
+        '<th class="num">Hire/day</th><th class="num">TEU</th>' +
+        '<th class="num">Speed range</th><th class="num">Points</th><th>Fuel type</th>' +
+      '</tr></thead>' +
+      '<tbody>' + rows + '</tbody>' +
+    '</table></div>' +
+    '<div style="font-family:var(--mono);font-size:9px;color:var(--text3)">' + summary + ' ? Click a row to view / edit</div>';
+}
+
+function vmSearch(q) { vmFilter = q; renderVesselManager(); }
+
+function vmSelectVessel(code) {
+  vmSelectedCode = code;
+  var v = vmAllVessels().find(function(x) { return x.code === code; });
+  if (v) vmEditSpd = v.speeds.map(function(s) { return {speed:s.speed, lsfo:s.lsfo, mgo:s.mgo}; });
+  renderVesselManager();
+}
+
+function vmCloseDetail() { vmSelectedCode = null; renderVesselManager(); }
+
+function vmSpdInp(el) {
+  var i = parseInt(el.dataset.si), f = el.dataset.sf;
+  vmEditSpd[i][f] = f === 'mgo' ? (el.value ? parseFloat(el.value) : null) : parseFloat(el.value) || 0;
+}
+
+function vmAddSpd() {
+  vmEditSpd.push({speed: 0, lsfo: 0, mgo: null});
+  renderVesselManager();
+}
+
+function vmRmSpd(i) {
+  if (vmEditSpd.length > 1) vmEditSpd.splice(i, 1);
+  renderVesselManager();
+}
+
+function vmSaveDetail() {
+  var v = customVessels.find(function(x) { return x.code === vmSelectedCode; });
+  if (!v) return;
+  v.name = document.getElementById('vmeName').value.trim() || v.name;
+  v.teu = parseFloat(document.getElementById('vmeTeu').value) || v.teu;
+  v.hire = parseFloat(document.getElementById('vmeHire').value) || v.hire;
+  v.speeds = vmEditSpd.filter(function(p) { return p.speed && p.lsfo; })
+    .sort(function(a,b) { return a.speed - b.speed; });
+  rebuildVesselDropdown();
+  renderVesselManager();
+  alert('Vessel "' + v.name + '" saved.');
+}
+
+function vmUseVessel() {
+  var sel = document.getElementById('vesselSelect');
+  sel.value = vmSelectedCode;
+  onVesselChange();
+  switchTab('rot');
+}
+
+function vmDeleteVessel() {
+  var v = customVessels.find(function(x) { return x.code === vmSelectedCode; });
+  if (!v) return;
+  if (!confirm('Delete vessel "' + v.name + '"? This cannot be undone.')) return;
+  customVessels = customVessels.filter(function(x) { return x.code !== vmSelectedCode; });
+  vmSelectedCode = null;
+  rebuildVesselDropdown();
+  renderVesselManager();
+}
+
+function vmAddNew() {
+  var code = 'CST' + Date.now().toString().slice(-5);
+  var v = {name: 'New Vessel', code: code, hire: 25000, teu: 1500,
+           speeds: [{speed:12.0, lsfo:24.0, mgo:null}, {speed:14.0, lsfo:32.0, mgo:null}], custom: true};
+  customVessels.push(v);
+  rebuildVesselDropdown();
+  vmSelectedCode = code;
+  vmEditSpd = v.speeds.map(function(s) { return {speed:s.speed, lsfo:s.lsfo, mgo:s.mgo}; });
+  renderVesselManager();
+}
+
+/* ?? EXPORT ??????????????????????????????????????????????????????????? */
+function vmExport() {
+  if (typeof XLSX === 'undefined') { alert('SheetJS library not loaded. Check internet connection.'); return; }
+  var rows = [['Vessel Name','Code','TEU','Hire ($/day)','Speed (kn)','LSFO (MT/day)','MGO (MT/day)']];
+  vmAllVessels().forEach(function(v) {
+    v.speeds.forEach(function(s) {
+      rows.push([v.name, v.code, v.teu, v.hire, s.speed, s.lsfo, s.mgo !== null ? s.mgo : '']);
+    });
+  });
+  var ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{wch:24},{wch:10},{wch:8},{wch:12},{wch:11},{wch:14},{wch:14}];
+  // Style header row
+  var hdr = ['A1','B1','C1','D1','E1','F1','G1'];
+  hdr.forEach(function(ref) {
+    if (ws[ref]) ws[ref].s = {font:{bold:true}, fill:{fgColor:{rgb:'1C2330'}}};
+  });
+  var wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Vessels');
+  XLSX.writeFile(wb, 'vessel_database.xlsx');
+}
+
+/* ?? IMPORT ??????????????????????????????????????????????????????????? */
+function vmImportClick() {
+  var fi = document.getElementById('vmFileInput');
+  if (fi) fi.click();
+}
+
+function vmImportFile(input) {
+  if (!input.files || !input.files[0]) return;
+  if (typeof XLSX === 'undefined') { alert('SheetJS library not loaded.'); return; }
+  var file = input.files[0];
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var data = new Uint8Array(e.target.result);
+      var wb = XLSX.read(data, {type: 'array'});
+      var ws = wb.Sheets[wb.SheetNames[0]];
+      var rows = XLSX.utils.sheet_to_json(ws, {header:1});
+      if (rows.length < 2) { alert('No data rows found.'); return; }
+      // Detect header row
+      var start = 0;
+      var h = (rows[0] || []).map(function(c) { return String(c||'').toLowerCase(); });
+      if (h.indexOf('speed') >= 0 || h.indexOf('vessel') >= 0) start = 1;
+      // Col indices ? try to find by header, else assume order
+      var ci = { name:0, code:1, teu:2, hire:3, speed:4, lsfo:5, mgo:6 };
+      if (start === 1) {
+        h.forEach(function(v,i) {
+          if (v.indexOf('name') >= 0 || v.indexOf('vessel') >= 0) ci.name = i;
+          else if (v === 'code') ci.code = i;
+          else if (v.indexOf('teu') >= 0) ci.teu = i;
+          else if (v.indexOf('hire') >= 0) ci.hire = i;
+          else if (v.indexOf('speed') >= 0) ci.speed = i;
+          else if (v.indexOf('lsfo') >= 0) ci.lsfo = i;
+          else if (v.indexOf('mgo') >= 0) ci.mgo = i;
+        });
+      }
+      // Group rows by vessel code
+      var map = {};
+      var order = [];
+      for (var ri = start; ri < rows.length; ri++) {
+        var r = rows[ri];
+        var code = String(r[ci.code] || '').trim();
+        var name = String(r[ci.name] || '').trim();
+        if (!code && !name) continue;
+        if (!code) code = 'IMP' + ri;
+        if (!map[code]) { map[code] = {name:name||code, code:code, teu:0, hire:0, speeds:[], custom:true}; order.push(code); }
+        var v = map[code];
+        if (!v.name && name) v.name = name;
+        v.teu = parseFloat(r[ci.teu]) || v.teu;
+        v.hire = parseFloat(r[ci.hire]) || v.hire;
+        var spd = parseFloat(r[ci.speed]);
+        var lsfo = parseFloat(r[ci.lsfo]);
+        var mgo = r[ci.mgo] !== undefined && r[ci.mgo] !== '' ? parseFloat(r[ci.mgo]) : null;
+        if (spd && lsfo) v.speeds.push({speed:spd, lsfo:lsfo, mgo:mgo});
+      }
+      var imported = order.map(function(c) { return map[c]; }).filter(function(v) { return v.speeds.length > 0; });
+      if (!imported.length) { alert('No valid vessel rows found. Check column format.'); return; }
+      // Merge: update existing custom or append new
+      var added = 0, updated = 0;
+      imported.forEach(function(iv) {
+        var existing = customVessels.find(function(x) { return x.code === iv.code; });
+        if (existing) { Object.assign(existing, iv); updated++; }
+        else {
+          // Also check if it matches a built-in by code ? skip overwriting built-ins
+          var builtin = VESSELS.find(function(x) { return x.code === iv.code; });
+          if (!builtin) { customVessels.push(iv); added++; }
+          else { updated++; }
+        }
+      });
+      rebuildVesselDropdown();
+      renderVesselManager();
+      alert('Import complete: ' + added + ' added, ' + updated + ' updated.');
+    } catch(err) { alert('Import failed: ' + err.message); }
+  };
+  reader.readAsArrayBuffer(file);
+  input.value = '';
+}
+/* ============================================================ end VM */
+
+
+/* ============================================================
+   VERSION HISTORY
+   ============================================================ */
+var versionHistory = [];
+var histCounter = 0;
+
+function saveVersion(speedRow) {
+  // speedRow = {spd, seaDays, totalDays, lsfoMT, mgoMT, bunker, hire, portExp, total, net, ppd, pph}
+  // Gather all current simulation state
+  var vessel = currentVessel();
+  if (!vessel) { alert('No vessel selected.'); return; }
+  var revData = getRevenue(vessel);
+  var lsfoPx = parseFloat(document.getElementById('lsfoPrice').value) || 550;
+  var mgoPx  = parseFloat(document.getElementById('mgoPrice').value)  || 750;
+  var hsfoPx = parseFloat(document.getElementById('hsfoPrice').value) || 450;
+  var totalPortExp = legPortExpenses.reduce(function(s,v){return s+v;},0);
+  var revenue = revData.total;
+  histCounter++;
+  var ver = {
+    id: histCounter,
+    ts: new Date().toLocaleString(),
+    label: 'V' + histCounter,
+    vesselName: vessel.name,
+    vesselCode: vessel.code,
+    hire: vessel.hire,
+    teu: vessel.teu,
+    speed: speedRow.spd,
+    totalDays: speedRow.totalDays,
+    seaDays: speedRow.seaDays,
+    lsfoMT: speedRow.lsfoMT,
+    mgoMT: speedRow.mgoMT,
+    bunkerCost: speedRow.bunker,
+    hireCost: speedRow.hire,
+    portExp: speedRow.portExp,
+    totalCost: speedRow.total,
+    revenue: revenue,
+    netPL: speedRow.net,
+    ppd: speedRow.ppd,
+    pph: speedRow.pph,
+    lsfoPx: lsfoPx, mgoPx: mgoPx, hsfoPx: hsfoPx,
+    // Save sidebar revenue inputs
+    hhRev: document.getElementById('hhRev').value,
+    bhRev: document.getElementById('bhRev').value,
+    ddRev: document.getElementById('ddRev').value,
+    hhUtil: document.getElementById('hhUtil').value,
+    bhUtil: document.getElementById('bhUtil').value,
+    ddUtil: document.getElementById('ddUtil').value,
+    // Save port rotation snapshot
+    portsSnap: JSON.parse(JSON.stringify(ports)),
+    legSpeedsSnap: legSpeeds.slice(),
+    legPortStaysSnap: legPortStays.slice(),
+    legBufferHrsSnap: legBufferHrs.slice(),
+    legPortExpensesSnap: legPortExpenses.slice(),
+    // Revenue source
+    revSource: revData.source,
+    cargoSnap: JSON.parse(JSON.stringify(cargoRows)),
+    noteText: ''
+  };
+  versionHistory.push(ver);
+  renderHistTab();
+  switchTab('hist');
+}
+
+function renderHistTab() {
+  var el = document.getElementById('histContent');
+  if (!el) return;
+  if (!versionHistory.length) {
+    el.innerHTML = '<div class="section-head">Version History</div>' +
+      '<div class="hist-empty"><div class="placeholder-icon">H</div>' +
+      '<div class="placeholder-text">No versions saved yet</div>' +
+      '<div class="placeholder-sub">Run a simulation, go to Profitability tab and click "Save to History" on any speed row.</div></div>';
+    return;
+  }
+  var maxAbs = Math.max.apply(null, versionHistory.map(function(v){ return Math.abs(v.netPL); })) || 1;
+  var rows = versionHistory.map(function(v, i) {
+    var plCls = v.netPL >= 0 ? 'c-prof' : 'c-neg';
+    var ppdCls = v.ppd >= 0 ? 'c-prof' : 'c-neg';
+    return '<tr onclick="histSelectRow(' + i + ')" id="histrow' + i + '">' +
+      '<td><span class="hist-ver-badge">' + escH(v.label) + '</span></td>' +
+      '<td>' + escH(v.vesselName) + '</td>' +
+      '<td style="text-align:left;color:var(--text2);font-size:9px">' + v.ts + '</td>' +
+      '<td>' + v.speed.toFixed(1) + ' kn</td>' +
+      '<td>' + v.totalDays.toFixed(1) + ' d</td>' +
+      '<td class="c-bunk">' + usd(v.bunkerCost) + '</td>' +
+      '<td class="c-hire">' + usd(v.hireCost) + '</td>' +
+      '<td style="color:var(--red)">' + usd(v.portExp) + '</td>' +
+      '<td class="c-tot">' + usd(v.totalCost) + '</td>' +
+      '<td class="c-tot">' + usd(v.revenue) + '</td>' +
+      '<td class="' + plCls + '">' + susd(Math.round(v.netPL)) + '</td>' +
+      '<td class="' + ppdCls + '">' + susd(Math.round(v.ppd)) + '/d</td>' +
+      '<td style="padding:4px 6px">' +
+        '<button class="restore-btn" onclick="event.stopPropagation();histRestore(' + i + ')">Restore</button> ' +
+        '<button class="del-hist-btn" onclick="event.stopPropagation();histDelete(' + i + ')">x</button>' +
+      '</td>' +
+    '</tr>';
+  }).join('');
+
+  // Summary best/worst
+  var best = versionHistory.reduce(function(a,b){return a.netPL>b.netPL?a:b;});
+  var worst = versionHistory.reduce(function(a,b){return a.netPL<b.netPL?a:b;});
+
+  el.innerHTML =
+    '<div class="section-head">Version History ? ' + versionHistory.length + ' scenario' + (versionHistory.length!==1?'s':'') + ' saved</div>' +
+    '<div class="hist-toolbar">' +
+      '<span style="font-size:10px;color:var(--text2)">Best: <strong style="color:var(--teal)">' + escH(best.label) + ' ' + best.vesselName + ' @ ' + best.speed.toFixed(1) + ' kn ? ' + susd(Math.round(best.netPL)) + '</strong></span>' +
+      '<span style="color:var(--text3);font-family:var(--mono);font-size:10px;margin:0 8px">|</span>' +
+      '<span style="font-size:10px;color:var(--text2)">Worst: <strong style="color:var(--red)">' + escH(worst.label) + ' ' + worst.vesselName + ' @ ' + worst.speed.toFixed(1) + ' kn ? ' + susd(Math.round(worst.netPL)) + '</strong></span>' +
+      '<div style="flex:1"></div>' +
+      '<button class="vm-btn red" onclick="histClearAll()">Clear all</button>' +
+    '</div>' +
+    '<div class="hist-table-wrap"><table class="hist-table"><thead><tr>' +
+      '<th style="text-align:left">Version</th><th style="text-align:left">Vessel</th><th style="text-align:left">Saved</th>' +
+      '<th>Speed</th><th>Days</th><th class="cb">Bunker</th><th class="ch">Hire</th>' +
+      '<th style="color:var(--red)">Port exp</th><th class="ct">Total cost</th>' +
+      '<th class="ct">Revenue</th><th class="cp">Net P&L</th><th class="cp">P/day</th><th>Actions</th>' +
+    '</tr></thead><tbody>' + rows + '</tbody></table></div>' +
+    '<div class="notes"><strong>Notes:</strong><br>' +
+    '1. Click any row to expand parameters. Click "Restore" to reload all parameters and rerun the simulation.<br>' +
+    '2. Saved versions persist for this browser session only. Export via Vessel Manager for permanent storage.<br>' +
+    '3. Versions are labelled V1, V2... in order of saving. Rename by editing the label field after expanding.<br>' +
+    '</div>';
+}
+
+var histSelectedIdx = null;
+function histSelectRow(i) {
+  histSelectedIdx = i;
+  var v = versionHistory[i];
+  var rows = document.querySelectorAll('#histContent .hist-table tbody tr');
+  rows.forEach(function(r,j){ r.classList.toggle('hist-active', j===i); });
+  // Show detail box
+  var detId = 'histDetail';
+  var existing = document.getElementById(detId);
+  var html =
+    '<div class="hist-detail-box" id="' + detId + '">' +
+    '<strong>' + escH(v.label) + ' ? ' + escH(v.vesselName) + ' @ ' + v.speed.toFixed(1) + ' kn</strong><br>' +
+    'Saved: ' + v.ts + '<br>' +
+    'Vessel: ' + escH(v.vesselName) + ' | TEU: ' + n(v.teu) + ' | Hire: $' + n(v.hire) + '/day<br>' +
+    'Route: ' + v.portsSnap.map(function(p){return escH(p.name||'?');}).join(' &rarr; ') + '<br>' +
+    'Speed: ' + v.speed.toFixed(1) + ' kn | Total days: ' + v.totalDays.toFixed(1) + ' d<br>' +
+    'Bunker: LSFO $' + n(v.lsfoPx) + '/MT | MGO $' + n(v.mgoPx) + '/MT<br>' +
+    'Revenue: ' + usd(v.revenue) + ' (' + escH(v.revSource) + ') | Total cost: ' + usd(v.totalCost) + '<br>' +
+    '<strong>Net P&L: ' + susd(Math.round(v.netPL)) + ' | P/day: ' + susd(Math.round(v.ppd)) + '/d</strong><br>' +
+    '<button class="restore-btn" style="margin-top:6px" onclick="histRestore(' + i + ')">Restore this scenario &rarr;</button>' +
+    '</div>';
+  var wrap = document.querySelector('#histContent .hist-table-wrap');
+  if (existing) existing.outerHTML = html;
+  else if (wrap) wrap.insertAdjacentHTML('beforebegin', html);
+}
+
+function histRestore(i) {
+  var v = versionHistory[i];
+  // Restore vessel
+  var sel = document.getElementById('vesselSelect');
+  sel.value = v.vesselCode;
+  onVesselChange();
+  // Restore ports
+  ports = JSON.parse(JSON.stringify(v.portsSnap));
+  legSpeeds = v.legSpeedsSnap.slice();
+  legPortStays = v.legPortStaysSnap.slice();
+  legBufferHrs = v.legBufferHrsSnap.slice();
+  legPortExpenses = v.legPortExpensesSnap.slice();
+  // Restore bunker prices
+  document.getElementById('lsfoPrice').value = v.lsfoPx;
+  document.getElementById('mgoPrice').value  = v.mgoPx;
+  document.getElementById('hsfoPrice').value = v.hsfoPx;
+  // Restore revenue inputs
+  document.getElementById('hhRev').value  = v.hhRev;
+  document.getElementById('bhRev').value  = v.bhRev;
+  document.getElementById('ddRev').value  = v.ddRev;
+  document.getElementById('hhUtil').value = v.hhUtil;
+  document.getElementById('bhUtil').value = v.bhUtil;
+  document.getElementById('ddUtil').value = v.ddUtil;
+  // Restore cargo
+  cargoRows = JSON.parse(JSON.stringify(v.cargoSnap));
+  // Rerender sidebar ports + run
+  renderPorts();
+  runSimulation();
+  switchTab('profit');
+}
+
+function histDelete(i) {
+  if (!confirm('Remove ' + versionHistory[i].label + ' from history?')) return;
+  versionHistory.splice(i, 1);
+  histSelectedIdx = null;
+  renderHistTab();
+}
+
+function histClearAll() {
+  if (!confirm('Clear all ' + versionHistory.length + ' saved version(s)?')) return;
+  versionHistory = [];
+  histSelectedIdx = null;
+  renderHistTab();
+}
+
+/* ============================================================
+   REVENUE SENSITIVITY
+   ============================================================ */
+function renderRevSenTab() {
+  var vessel = currentVessel();
+  if (!vessel) {
+    document.getElementById('revsenContent').innerHTML =
+      '<div class="placeholder"><div class="placeholder-icon">$</div><div class="placeholder-text">Run simulation first</div></div>';
+    return;
+  }
+
+  var teu = vessel.teu;
+  var lsfoPx = parseFloat(document.getElementById('lsfoPrice').value) || 550;
+  var mgoPx  = parseFloat(document.getElementById('mgoPrice').value)  || 750;
+  var hire   = vessel.hire;
+  var totalPortExp = legPortExpenses.reduce(function(s,v){return s+v;},0);
+
+  // Build actual voyage cost at mid speed
+  var speedList = vessel.speeds.map(function(s){return s.speed;}).sort(function(a,b){return a-b;});
+  var midSpd = speedList[Math.floor(speedList.length/2)];
+  var totalNM = ports.reduce(function(s,p,i){ return i<ports.length-1?s+(p.dist||0):s; }, 0);
+  var totalPortDays = legPortStays.reduce(function(s,v){return s+v;},0);
+  var totalBufDays  = legBufferHrs.reduce(function(s,v){return s+v/24;},0);
+  var seaDays  = totalNM > 0 ? totalNM / midSpd / 24 : 0;
+  var totalDays = seaDays + totalPortDays + totalBufDays;
+  var hasMgo = vessel.speeds.some(function(s){return s.mgo!==null;});
+  var lsfoMT = getRate(vessel, midSpd, 'lsfo') * seaDays;
+  var mgoMT  = hasMgo ? getRate(vessel, midSpd, 'mgo') * seaDays : 0;
+  var bunkerCost = lsfoMT * lsfoPx + mgoMT * mgoPx;
+  var hireCost   = hire * totalDays;
+  var fixedCost  = bunkerCost + hireCost + totalPortExp;
+
+  // Read current sidebar values as defaults for the range controls
+  var baseHH   = parseFloat(document.getElementById('hhRev').value)  || 300;
+  var _buu=document.getElementById('hhUtil').value; var baseUtil=(_buu===''?100:parseFloat(_buu));
+  var baseBH   = parseFloat(document.getElementById('bhRev').value)  || 150;
+  var _bbhu=document.getElementById('bhUtil').value; var baseBHUtil=(_bbhu===''?100:parseFloat(_bbhu));
+  var baseDD   = parseFloat(document.getElementById('ddRev').value)  || 50;
+  var _bddu=document.getElementById('ddUtil').value; var baseDDUtil=(_bddu===''?100:parseFloat(_bddu));
+
+  // ?? TABLE 1: HH Ocean Freight ? Load Factor ?????????????????????????????
+  var hhSteps = [];
+  var hhMin = Math.max(0, baseHH - 150);
+  var hhMax = baseHH + 150;
+  for (var si=0; si<9; si++) hhSteps.push(Math.round(hhMin + si*(hhMax-hhMin)/8));
+  var lfSteps = [50,60,70,75,80,85,90,95,100];
+
+  function tbl1Cell(hh, lf) {
+    var hhTeu = Math.round(teu * lf/100);
+    var rev = hhTeu*hh + Math.round(teu*baseBHUtil/100)*baseBH + Math.round(teu*baseDDUtil/100)*baseDD;
+    return (rev - fixedCost) / totalDays;
+  }
+
+  // ?? TABLE 2: Backhaul Rate ? Backhaul Utilisation ???????????????????????
+  var bhSteps = [];
+  var bhMin = Math.max(0, baseBH - 100);
+  var bhMax = baseBH + 100;
+  for (var si=0; si<9; si++) bhSteps.push(Math.round(bhMin + si*(bhMax-bhMin)/8));
+  var bhUSteps = [40,50,60,70,80,90,100];
+
+  function tbl2Cell(bh, bhu) {
+    var rev = Math.round(teu*baseUtil/100)*baseHH + Math.round(teu*bhu/100)*bh + Math.round(teu*baseDDUtil/100)*baseDD;
+    return (rev - fixedCost) / totalDays;
+  }
+
+  // ?? TABLE 3: Combined Revenue/TEU ? Total Load Factor ???????????????????
+  var blendSteps = [];
+  var blendMin = Math.max(50, baseHH - 100);
+  var blendMax = baseHH + 200;
+  for (var si=0; si<9; si++) blendSteps.push(Math.round(blendMin + si*(blendMax-blendMin)/8));
+  var totalLfSteps = [50,60,65,70,75,80,85,90,95,100];
+
+  function tbl3Cell(rate, lf) {
+    var loadedTeu = Math.round(teu * lf/100);
+    var rev = loadedTeu * rate;
+    return (rev - fixedCost) / totalDays;
+  }
+
+  // ?? TABLE 4: HH Rate ? Speed ????????????????????????????????????????????
+  function tbl4Cell(hh, spd) {
+    var sd = totalNM>0?totalNM/spd/24:0, td=sd+totalPortDays+totalBufDays;
+    var lm=getRate(vessel,spd,'lsfo')*sd, mm=hasMgo?getRate(vessel,spd,'mgo')*sd:0;
+    var bk=lm*lsfoPx+mm*mgoPx, hc=hire*td;
+    var rev = Math.round(teu*baseUtil/100)*hh + Math.round(teu*baseBHUtil/100)*baseBH + Math.round(teu*baseDDUtil/100)*baseDD;
+    return (rev - bk - hc - totalPortExp) / td;
+  }
+
+  function makeHeatTable(rowLabels, colLabels, cellFn, rowPfx, colPfx, highlight) {
+    var allVals = [];
+    rowLabels.forEach(function(r){ colLabels.forEach(function(c){ allVals.push(cellFn(r,c)); }); });
+    var maxAbs = Math.max.apply(null, allVals.map(Math.abs)) || 1;
+    var hdr = '<thead><tr><th style="text-align:left">' + rowPfx + '</th>' +
+      colLabels.map(function(c){ return '<th class="cp">' + colPfx + c + '</th>'; }).join('') + '</tr></thead>';
+    var body = '<tbody>' + rowLabels.map(function(r, ri) {
+      var isBase = highlight && Math.abs(r - highlight) < 0.01;
+      return '<tr' + (isBase?' class="mid"':'') + '>' +
+        '<td style="text-align:left"><strong' + (isBase?' style="color:var(--accent)"':'') + '>'+rowPfx+r+'</strong></td>' +
+        colLabels.map(function(c) {
+          var v = cellFn(r,c);
+          return '<td class="' + heatClass(v,maxAbs) + '">' + (v>=0?'+':'') + usd(Math.round(v)) + '/d</td>';
+        }).join('') +
+      '</tr>';
+    }).join('') + '</tbody>';
+    return '<table style="min-width:'+(200+colLabels.length*80)+'px">' + hdr + body + '</table>';
+  }
+
+  var speedTicks = speedList.filter(function(s,i){ return i%2===0||i===speedList.length-1; });
+
+  document.getElementById('revsenContent').innerHTML =
+    '<div class="section-head">Revenue Sensitivity Analysis ? ' + escH(vessel.name) + ' @ mid speed ' + midSpd.toFixed(1) + ' kn</div>' +
+    '<div class="revsen-controls">' +
+      '<div class="revsen-field"><label>Base HH rate ($/TEU)</label><input class="revsen-inp" id="rsHH" type="number" value="' + baseHH + '" step="10"></div>' +
+      '<div class="revsen-field"><label>HH util %</label><input class="revsen-inp" id="rsHHU" type="number" value="' + baseUtil + '" step="5"></div>' +
+      '<div class="revsen-field"><label>Base BH rate ($/TEU)</label><input class="revsen-inp" id="rsBH" type="number" value="' + baseBH + '" step="10"></div>' +
+      '<div class="revsen-field"><label>BH util %</label><input class="revsen-inp" id="rsBHU" type="number" value="' + baseBHUtil + '" step="5"></div>' +
+      '<div class="revsen-field"><label>Base DD rate ($/TEU)</label><input class="revsen-inp" id="rsDD" type="number" value="' + baseDD + '" step="10"></div>' +
+      '<div class="revsen-field"><label>DD util %</label><input class="revsen-inp" id="rsDDU" type="number" value="' + baseDDUtil + '" step="5"></div>' +
+      '<button class="revsen-run" onclick="runRevSen()">Recalculate</button>' +
+    '</div>' +
+    '<div class="cards-row cards-4">' +
+      mkCard('Fixed cost (mid spd)', usd(fixedCost), 'Bunker+hire+port exp @ '+midSpd.toFixed(1)+' kn', 'amber') +
+      mkCard('Bunker cost', usd(bunkerCost), n(lsfoMT,1)+' MT LSFO', 'amber') +
+      mkCard('Charter hire', usd(hireCost), '$'+n(hire)+'/d x '+totalDays.toFixed(1)+'d', 'purple') +
+      mkCard('Port expenses', usd(totalPortExp), 'All port calls', 'red') +
+    '</div>' +
+
+    '<div class="revsen-section">' +
+      '<div class="section-head">Table 1 ? Headhaul Rate ($/TEU) x Load Factor % &rarr; Profit/day</div>' +
+      '<div style="font-size:10px;color:var(--text2);margin-bottom:8px">BH and DD held at base values. Highlighted row = base HH rate.</div>' +
+      '<div class="table-wrap">' + makeHeatTable(hhSteps, lfSteps, tbl1Cell, '$', '', baseHH) + '</div>' +
+    '</div>' +
+
+    '<div class="revsen-section">' +
+      '<div class="section-head">Table 2 ? Backhaul Rate ($/TEU) x Backhaul Utilisation % &rarr; Profit/day</div>' +
+      '<div style="font-size:10px;color:var(--text2);margin-bottom:8px">HH and DD held at base values.</div>' +
+      '<div class="table-wrap">' + makeHeatTable(bhSteps, bhUSteps, tbl2Cell, '$', '', baseBH) + '</div>' +
+    '</div>' +
+
+    '<div class="revsen-section">' +
+      '<div class="section-head">Table 3 ? Blended Revenue/TEU x Overall Load Factor % &rarr; Profit/day</div>' +
+      '<div style="font-size:10px;color:var(--text2);margin-bottom:8px">Treats all loaded TEUs at a single blended rate ? useful for quick break-even analysis.</div>' +
+      '<div class="table-wrap">' + makeHeatTable(blendSteps, totalLfSteps, tbl3Cell, '$', '', baseHH) + '</div>' +
+    '</div>' +
+
+    '<div class="revsen-section">' +
+      '<div class="section-head">Table 4 ? Headhaul Rate ($/TEU) x Vessel Speed &rarr; Profit/day</div>' +
+      '<div style="font-size:10px;color:var(--text2);margin-bottom:8px">Shows combined impact of revenue and speed on profit. BH + DD held at base. Bunker cost changes with speed.</div>' +
+      '<div class="table-wrap">' + makeHeatTable(hhSteps, speedTicks, tbl4Cell, '$', '', baseHH) + '</div>' +
+    '</div>' +
+
+    '<div class="notes"><strong>Notes:</strong><br>' +
+    '1. All Profit/day figures = (Revenue - Bunker - Hire - Port exp) / Total days.<br>' +
+    '2. Fixed cost for Tables 1-3 uses mid speed (' + midSpd.toFixed(1) + ' kn). Table 4 recalculates bunker and hire per speed.<br>' +
+    '3. Adjust base rates and utilisation in the controls above and click Recalculate to refresh.<br>' +
+    '4. Green = profitable, red = loss-making. Highlighted rows = current base value.<br>' +
+    '</div>';
+}
+
+function runRevSen() {
+  // Pull updated values from revsen controls back into sidebar, then re-render
+  var rsHH  = document.getElementById('rsHH');
+  var rsHHU = document.getElementById('rsHHU');
+  var rsBH  = document.getElementById('rsBH');
+  var rsBHU = document.getElementById('rsBHU');
+  var rsDD  = document.getElementById('rsDD');
+  var rsDDU = document.getElementById('rsDDU');
+  if (rsHH)  document.getElementById('hhRev').value  = rsHH.value;
+  if (rsHHU) document.getElementById('hhUtil').value = rsHHU.value;
+  if (rsBH)  document.getElementById('bhRev').value  = rsBH.value;
+  if (rsBHU) document.getElementById('bhUtil').value = rsBHU.value;
+  if (rsDD)  document.getElementById('ddRev').value  = rsDD.value;
+  if (rsDDU) document.getElementById('ddUtil').value = rsDDU.value;
+  renderRevSenTab();
+}
+/* ============================================================ end V9 JS */
+
+init();
+</script>
+</body>
+</html>
