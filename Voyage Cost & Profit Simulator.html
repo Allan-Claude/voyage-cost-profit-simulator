@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voyage Cost &amp; Profit Simulator</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d1117;--bg2:#161b22;--bg3:#1c2330;
+  --border:#2a3441;--border2:#3a4a5c;
+  --text:#e6edf3;--text2:#8b949e;--text3:#4a5568;
+  --accent:#00d4ff;--green:#3fb950;--amber:#d29922;
+  --red:#f85149;--purple:#bc8cff;--teal:#39d353;
+  --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.6;min-height:100vh;}
+.header{border-bottom:1px solid var(--border);padding:13px 24px;display:flex;align-items:center;justify-content:space-between;background:var(--bg2);}
+.header-left{display:flex;align-items:center;gap:11px;}
+.header-icon{width:29px;height:29px;background:var(--accent);border-radius:5px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.header-icon svg{width:15px;height:15px;}
+.header-title{font-family:var(--mono);font-size:12px;font-weight:500;letter-spacing:.03em;}
+.header-sub{font-size:10px;color:var(--text2);font-family:var(--mono);}
+.ver{font-family:var(--mono);font-size:10px;color:var(--text3);background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:2px 7px;}
+.tabs{display:flex;border-bottom:1px solid var(--border);background:var(--bg2);}
+.tab{font-family:var(--mono);font-size:10px;padding:9px 15px;cursor:pointer;color:var(--text2);border-bottom:2px solid transparent;letter-spacing:.05em;text-transform:uppercase;transition:all .2s;}
+.tab:hover{color:var(--text);}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.container{display:grid;grid-template-columns:278px 1fr;min-height:calc(100vh - 100px);}
+.sidebar{background:var(--bg2);border-right:1px solid var(--border);padding:14px 12px;display:flex;flex-direction:column;gap:13px;overflow-y:auto;}
+.main{padding:18px 22px;overflow-y:auto;}
+.field-label{font-family:var(--mono);font-size:9px;font-weight:500;color:var(--accent);letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px;}
+.field-label.sens{color:var(--amber);}
+.select-wrap{position:relative;}
+.select-wrap select{width:100%;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:11px;padding:6px 26px 6px 8px;border-radius:5px;appearance:none;cursor:pointer;outline:none;transition:border-color .2s;}
+.select-wrap select:focus{border-color:var(--accent);}
+.select-wrap::after{content:'v';position:absolute;right:8px;top:50%;transform:translateY(-50%);color:var(--accent);font-size:9px;pointer-events:none;font-family:var(--mono);}
+.vessel-badge{display:none;background:var(--bg3);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:5px;padding:8px 10px;margin-top:6px;}
+.vessel-badge.show{display:block;}
+.vb-name{font-family:var(--mono);font-size:10px;font-weight:500;}
+.vb-row{display:flex;justify-content:space-between;margin-top:3px;}
+.vb-item{font-size:9px;color:var(--text2);}
+.vb-item span{color:var(--text);font-family:var(--mono);}
+.vb-item span.purple{color:var(--purple);}
+.vb-item span.teal{color:var(--teal);}
+.mgo-flag{font-size:9px;color:var(--amber);font-family:var(--mono);margin-top:3px;display:none;}
+.mgo-flag.show{display:block;}
+
+/* AUTOCOMPLETE */
+.port-list{display:flex;flex-direction:column;gap:4px;}
+.port-row{display:flex;align-items:center;gap:5px;background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:4px 7px;position:relative;}
+.port-num{font-family:var(--mono);font-size:9px;color:var(--text3);width:11px;text-align:center;flex-shrink:0;}
+.ac-wrap{flex:1;position:relative;min-width:0;}
+.ac-inp{width:100%;background:transparent;border:none;outline:none;color:var(--text);font-family:var(--sans);font-size:11px;}
+.ac-inp::placeholder{color:var(--text3);}
+.ac-drop{position:absolute;top:100%;left:0;right:0;background:var(--bg2);border:1px solid var(--border2);border-radius:5px;z-index:999;max-height:180px;overflow-y:auto;display:none;margin-top:2px;box-shadow:0 4px 12px rgba(0,0,0,.4);}
+.ac-item{padding:6px 10px;font-size:11px;color:var(--text2);cursor:pointer;font-family:var(--sans);border-bottom:1px solid var(--border);transition:background .1s;}
+.ac-item:last-child{border-bottom:none;}
+.ac-item:hover{background:var(--bg3);color:var(--text);}
+.rm-btn{background:none;border:none;cursor:pointer;color:var(--text3);font-size:11px;padding:0 1px;flex-shrink:0;line-height:1;transition:color .15s;}
+.rm-btn:hover{color:var(--red);}
+.add-port-btn{width:100%;background:transparent;border:1px dashed var(--border2);color:var(--text2);font-family:var(--mono);font-size:9px;padding:5px;border-radius:5px;cursor:pointer;transition:all .2s;margin-top:2px;}
+.add-port-btn:hover{border-color:var(--accent);color:var(--accent);}
+
+.sb-divider{border:none;border-top:1px solid var(--border);}
+.sb-input{background:var(--bg3);border:1px solid var(--border2);font-family:var(--mono);font-size:11px;padding:5px 6px;border-radius:5px;outline:none;text-align:right;transition:border-color .2s;width:62px;}
+.sb-input:focus{border-color:var(--accent);}
+.sb-input.amber{color:var(--amber);}
+.input-row{display:flex;align-items:center;gap:6px;}
+.input-lbl{font-size:10px;color:var(--text2);}
+.price-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;}
+.price-field label{font-size:9px;font-family:var(--mono);color:var(--text2);display:block;margin-bottom:2px;}
+.price-field input{width:100%;background:var(--bg3);border:1px solid var(--border2);font-family:var(--mono);font-size:11px;padding:5px 6px;border-radius:5px;outline:none;text-align:right;transition:border-color .2s;}
+.price-field input.green{color:var(--green);}
+.price-field input:focus{border-color:var(--accent);}
+
+/* 3-tier revenue */
+.rev-table{width:100%;border-collapse:collapse;}
+.rev-table th{font-size:9px;font-family:var(--mono);color:var(--text3);letter-spacing:.06em;text-transform:uppercase;padding:0 0 4px;text-align:right;}
+.rev-table th:first-child{text-align:left;}
+.rev-table td{padding:3px 0;}
+.rev-table td:first-child{font-size:10px;color:var(--text2);padding-right:6px;white-space:nowrap;}
+.rev-inp{width:58px;background:var(--bg3);border:1px solid var(--border2);color:var(--purple);font-family:var(--mono);font-size:11px;padding:4px 5px;border-radius:4px;outline:none;text-align:right;transition:border-color .2s;}
+.rev-inp:focus{border-color:var(--accent);}
+.util-inp{width:44px;background:var(--bg3);border:1px solid var(--border2);color:var(--teal);font-family:var(--mono);font-size:11px;padding:4px 5px;border-radius:4px;outline:none;text-align:right;transition:border-color .2s;}
+.util-inp:focus{border-color:var(--accent);}
+
+.sens-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;}
+.sens-field label{font-size:9px;font-family:var(--mono);color:var(--amber);display:block;margin-bottom:2px;}
+.sens-field input{width:100%;background:var(--bg3);border:1px solid rgba(210,153,34,.4);color:var(--amber);font-family:var(--mono);font-size:11px;padding:5px 6px;border-radius:4px;outline:none;text-align:right;transition:border-color .2s;}
+.sens-field input:focus{border-color:var(--amber);}
+.sens-rule{background:var(--bg3);border:1px solid var(--border);border-left:2px solid var(--amber);border-radius:4px;padding:5px 8px;margin-top:3px;}
+.sens-rule-row{display:flex;justify-content:space-between;font-size:9px;color:var(--text2);margin-bottom:1px;}
+.sens-rule-row:last-child{margin-bottom:0;}
+.sens-rule-val{font-family:var(--mono);color:var(--amber);font-size:9px;}
+.steps-row{display:flex;align-items:center;gap:5px;margin-top:4px;}
+.steps-row label{font-size:9px;font-family:var(--mono);color:var(--amber);}
+.steps-row input{width:44px;background:var(--bg3);border:1px solid rgba(210,153,34,.4);color:var(--amber);font-family:var(--mono);font-size:11px;padding:4px 5px;border-radius:4px;outline:none;text-align:right;}
+.run-btn{width:100%;background:var(--accent);color:var(--bg);font-family:var(--mono);font-size:11px;font-weight:500;padding:10px;border:none;border-radius:6px;cursor:pointer;letter-spacing:.06em;transition:background .2s,transform .1s;margin-top:auto;}
+.run-btn:hover{background:#00bde0;}
+.run-btn:active{transform:scale(.98);}
+
+/* MAIN */
+.section-head{font-family:var(--mono);font-size:9px;font-weight:500;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+.cards-row{display:grid;gap:8px;margin-bottom:16px;}
+.cards-5{grid-template-columns:repeat(5,1fr);}
+.cards-4{grid-template-columns:repeat(4,1fr);}
+.cards-3{grid-template-columns:repeat(3,1fr);}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:7px;padding:10px 12px;}
+.card.hi{border-left:3px solid var(--green);}
+.card.lo{border-left:3px solid var(--purple);}
+.card.warn{border-left:3px solid var(--amber);}
+.card-lbl{font-family:var(--mono);font-size:8px;color:var(--text2);letter-spacing:.07em;text-transform:uppercase;margin-bottom:4px;}
+.card-val{font-family:var(--mono);font-size:16px;font-weight:500;line-height:1;}
+.card-val.green{color:var(--green);}
+.card-val.purple{color:var(--purple);}
+.card-val.amber{color:var(--amber);}
+.card-val.accent{color:var(--accent);}
+.card-val.teal{color:var(--teal);}
+.card-val.red{color:var(--red);}
+.card-sub{font-size:9px;color:var(--text3);margin-top:3px;}
+.table-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:7px;overflow:hidden;margin-bottom:16px;overflow-x:auto;}
+table{width:100%;border-collapse:collapse;}
+thead th{font-family:var(--mono);font-size:9px;font-weight:500;color:var(--text2);letter-spacing:.07em;text-transform:uppercase;padding:8px 10px;text-align:right;background:var(--bg3);border-bottom:1px solid var(--border);white-space:nowrap;}
+thead th:first-child{text-align:left;}
+thead th.ch{color:var(--purple);}
+thead th.cb{color:var(--amber);}
+thead th.ct{color:var(--green);}
+thead th.cp{color:var(--teal);}
+thead th.cs{color:var(--amber);}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s;}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover{background:rgba(255,255,255,.02);}
+tbody tr.mid{background:rgba(0,212,255,.05);}
+tbody tr.sens-even{background:rgba(255,255,255,.01);}
+tbody td{font-family:var(--mono);font-size:10px;color:var(--text);padding:7px 10px;text-align:right;white-space:nowrap;}
+tbody td:first-child{text-align:left;color:var(--text2);}
+td.c-hire{color:var(--purple);}
+td.c-bunk{color:var(--amber);}
+td.c-tot{color:var(--green);font-weight:500;}
+td.c-prof{color:var(--teal);font-weight:500;}
+td.c-neg{color:var(--red);font-weight:500;}
+td.c-be{color:var(--accent);}
+.tag{display:inline-block;font-size:8px;font-family:var(--mono);padding:1px 4px;border-radius:3px;margin-left:3px;vertical-align:middle;letter-spacing:.04em;}
+.tag-c{background:rgba(0,212,255,.12);color:var(--accent);border:1px solid rgba(0,212,255,.25);}
+.tag-g{background:rgba(63,185,80,.12);color:var(--green);border:1px solid rgba(63,185,80,.25);}
+.tag-a{background:rgba(210,153,34,.12);color:var(--amber);border:1px solid rgba(210,153,34,.25);}
+.cell-pill{display:inline-block;padding:1px 5px;border-radius:3px;font-size:9px;font-family:var(--mono);font-weight:500;}
+.pill-pos{background:rgba(57,211,83,.15);color:var(--teal);}
+.pill-neg{background:rgba(248,81,73,.15);color:var(--red);}
+.pill-be{background:rgba(0,212,255,.12);color:var(--accent);}
+.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:16px;}
+.chart-box{background:var(--bg2);border:1px solid var(--border);border-radius:7px;padding:13px 15px;}
+.chart-title{font-family:var(--mono);font-size:9px;color:var(--text2);letter-spacing:.07em;text-transform:uppercase;margin-bottom:9px;}
+.legend{display:flex;gap:11px;margin-bottom:7px;flex-wrap:wrap;}
+.leg-item{display:flex;align-items:center;gap:4px;font-family:var(--mono);font-size:9px;color:var(--text2);}
+.leg-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0;}
+.bar-row{display:flex;align-items:center;gap:6px;margin-bottom:4px;}
+.bar-lbl{font-family:var(--mono);font-size:9px;color:var(--text2);width:40px;text-align:right;flex-shrink:0;}
+.bar-lbl.wide{width:60px;}
+.bar-track{flex:1;height:11px;background:var(--bg3);border-radius:3px;overflow:hidden;display:flex;}
+.bar-seg{height:100%;transition:width .4s ease;}
+.bar-val{font-family:var(--mono);font-size:9px;width:80px;text-align:right;flex-shrink:0;}
+.bar-val.pos{color:var(--teal);}
+.bar-val.neg{color:var(--red);}
+.bar-val.neu{color:var(--text2);}
+.notes{background:var(--bg2);border:1px solid var(--border);border-left:3px solid var(--border2);border-radius:6px;padding:10px 12px;font-size:10px;color:var(--text2);line-height:1.8;}
+.notes strong{color:var(--text);}
+.info-box{background:var(--bg3);border:1px solid var(--border);border-left:3px solid var(--purple);border-radius:6px;padding:8px 11px;margin-bottom:14px;font-size:10px;color:var(--text2);line-height:1.7;}
+.info-box strong{color:var(--purple);}
+.sens-info-box{background:var(--bg3);border:1px solid var(--border);border-left:3px solid var(--amber);border-radius:6px;padding:8px 11px;margin-bottom:14px;font-size:10px;color:var(--text2);line-height:1.7;}
+.sens-info-box strong{color:var(--amber);}
+.placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:300px;gap:8px;color:var(--text3);}
+.placeholder-icon{font-size:28px;opacity:.2;}
+.placeholder-text{font-family:var(--mono);font-size:11px;}
+.placeholder-sub{font-size:10px;}
+.panel{display:none;}
+.panel.active{display:block;}
+.be-banner{background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.2);border-radius:6px;padding:8px 12px;margin-bottom:14px;font-size:10px;color:var(--text2);font-family:var(--mono);}
+.be-banner strong{color:var(--accent);}
+.heat-pos-hi{background:rgba(57,211,83,.28);color:var(--teal);}
+.heat-pos-md{background:rgba(57,211,83,.14);color:var(--teal);}
+.heat-pos-lo{background:rgba(57,211,83,.05);color:var(--teal);}
+.heat-neg-lo{background:rgba(248,81,73,.05);color:var(--red);}
+.heat-neg-md{background:rgba(248,81,73,.14);color:var(--red);}
+.heat-neg-hi{background:rgba(248,81,73,.28);color:var(--red);}
+/* Rotation tab */
+.rot-table-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:7px;overflow:hidden;margin-bottom:16px;overflow-x:auto;}
+.rot-table{width:100%;border-collapse:collapse;min-width:640px;}
+.rot-table thead th{font-family:var(--mono);font-size:9px;font-weight:500;color:var(--text2);letter-spacing:.07em;text-transform:uppercase;padding:8px 11px;text-align:right;background:var(--bg3);border-bottom:1px solid var(--border);white-space:nowrap;}
+.rot-table thead th:first-child,.rot-table thead th:nth-child(2){text-align:left;}
+.rot-table thead th.teal{color:var(--teal);}
+.rot-table thead th.amber{color:var(--amber);}
+.rot-table tbody tr{border-bottom:1px solid var(--border);}
+.rot-table tbody tr:last-child{border-bottom:none;}
+.rot-table tbody tr:hover{background:rgba(255,255,255,.02);}
+.rot-table tbody tr.totals-row{background:var(--bg3);border-top:1px solid var(--border2);}
+.rot-table tbody td{font-family:var(--mono);font-size:10px;color:var(--text);padding:7px 11px;text-align:right;white-space:nowrap;}
+.rot-table tbody td:first-child{text-align:left;font-size:9px;color:var(--text3);}
+.rot-table tbody td:nth-child(2){text-align:left;color:var(--text);font-size:11px;}
+.rot-edit{background:var(--bg);border:1px solid var(--border2);font-family:var(--mono);font-size:10px;padding:3px 5px;border-radius:4px;outline:none;text-align:right;transition:border-color .2s;}
+.rot-edit:focus{border-color:var(--teal);box-shadow:0 0 0 2px rgba(57,211,83,.1);}
+.rot-edit.speed-inp{color:var(--accent);width:54px;}
+.rot-edit.speed-inp:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(0,212,255,.1);}
+.rot-edit.stay-inp{color:var(--teal);width:50px;}
+.rot-edit.dist-inp{color:var(--amber);width:62px;}
+.rot-edit.dist-inp.auto{color:var(--text2);}
+.rot-edit.dist-inp.manual{color:var(--amber);border-color:rgba(210,153,34,.4);}
+.rot-summary{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:16px;}
+.rot-note{font-size:9px;color:var(--text3);font-family:var(--mono);margin-top:3px;}
+.recalc-btn{background:rgba(57,211,83,.12);border:1px solid rgba(57,211,83,.3);color:var(--teal);font-family:var(--mono);font-size:10px;padding:5px 12px;border-radius:5px;cursor:pointer;transition:all .2s;letter-spacing:.04em;}
+.recalc-btn:hover{background:rgba(57,211,83,.22);border-color:var(--teal);}
+.rot-header-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:11px;}
+.leg-badge{display:inline-block;font-family:var(--mono);font-size:8px;background:rgba(0,212,255,.1);color:var(--accent);border:1px solid rgba(0,212,255,.2);border-radius:3px;padding:1px 4px;margin-right:3px;}
+.auto-badge{font-family:var(--mono);font-size:8px;color:var(--text3);margin-left:2px;}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-left">
+    <div class="header-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#0d1117" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M2 20h20M4 20V10l8-7 8 7v10M10 20v-5h4v5"/>
+      </svg>
+    </div>
+    <div>
+      <div class="header-title">VOYAGE COST &amp; PROFIT SIMULATOR</div>
+      <div class="header-sub">Bunker &middot; Charter hire &middot; Loadability &middot; Profitability &middot; Sensitivity</div>
+    </div>
+  </div>
+  <div class="ver">v6.0</div>
+</div>
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('rot')">Port Rotation</div>
+  <div class="tab" onclick="switchTab('cost')">Voyage Cost</div>
+  <div class="tab" onclick="switchTab('profit')">Profitability</div>
+  <div class="tab" onclick="switchTab('sens')">Bunker Sensitivity</div>
+</div>
+<div class="container">
+  <div class="sidebar">
+    <div>
+      <div class="field-label">01 &middot; Vessel</div>
+      <div class="select-wrap">
+        <select id="vesselSelect" onchange="onVesselChange()">
+          <option value="">-- Select vessel --</option>
+        </select>
+      </div>
+      <div class="vessel-badge" id="vesselBadge">
+        <div class="vb-name" id="vbName"></div>
+        <div class="vb-row">
+          <div class="vb-item">Hire: <span class="purple" id="vbHire"></span></div>
+          <div class="vb-item">TEU: <span class="teal" id="vbTeu"></span></div>
+        </div>
+        <div class="vb-row">
+          <div class="vb-item">Speed: <span id="vbSpd"></span></div>
+          <div class="vb-item">Points: <span id="vbPts"></span></div>
+        </div>
+        <div class="mgo-flag" id="mgoFlag">MGO data available</div>
+      </div>
+    </div>
+    <hr class="sb-divider">
+    <div>
+      <div class="field-label">02 &middot; Port Rotation</div>
+      <div class="port-list" id="portList"></div>
+      <button class="add-port-btn" onclick="addPort()">+ Add port</button>
+      <div class="rot-note" style="margin-top:5px;">Distances auto-calculated (Haversine). Override in Rotation tab.</div>
+    </div>
+    <hr class="sb-divider">
+    <div>
+      <div class="field-label">03 &middot; Default Settings</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">
+        <div>
+          <div style="font-size:9px;font-family:var(--mono);color:var(--text2);margin-bottom:2px;">Default speed (kn)</div>
+          <input type="number" id="defSpeed" class="sb-input amber" value="13" min="8" max="20" step="0.5" onchange="applyDefaults()">
+        </div>
+        <div>
+          <div style="font-size:9px;font-family:var(--mono);color:var(--text2);margin-bottom:2px;">Port stay (days)</div>
+          <input type="number" id="portStay" class="sb-input amber" value="1" min="0" step="0.5" onchange="applyDefaults()">
+        </div>
+      </div>
+      <div class="rot-note">Edit per-leg in Port Rotation tab</div>
+    </div>
+    <hr class="sb-divider">
+    <div>
+      <div class="field-label">04 &middot; Bunker Prices (USD/MT)</div>
+      <div class="price-grid">
+        <div class="price-field"><label>HSFO</label><input type="number" id="hsfoPrice" class="green" value="450" min="0" step="5"></div>
+        <div class="price-field"><label>LSFO</label><input type="number" id="lsfoPrice" class="green" value="550" min="0" step="5" onchange="syncSensRules()"></div>
+        <div class="price-field"><label>MGO</label><input type="number" id="mgoPrice" class="green" value="750" min="0" step="5"></div>
+      </div>
+    </div>
+    <hr class="sb-divider">
+    <div>
+      <div class="field-label">05 &middot; Profitability Inputs</div>
+      <table class="rev-table">
+        <thead><tr>
+          <th>Stream</th>
+          <th>$/TEU</th>
+          <th>Util %</th>
+        </tr></thead>
+        <tbody>
+          <tr>
+            <td>Headhaul</td>
+            <td><input type="number" id="hhRev" class="rev-inp" value="300" min="0" step="10"></td>
+            <td><input type="number" id="hhUtil" class="util-inp" value="100" min="0" max="100" step="5"></td>
+          </tr>
+          <tr>
+            <td>Backhaul</td>
+            <td><input type="number" id="bhRev" class="rev-inp" value="150" min="0" step="10"></td>
+            <td><input type="number" id="bhUtil" class="util-inp" value="100" min="0" max="100" step="5"></td>
+          </tr>
+          <tr>
+            <td>Double Dip</td>
+            <td><input type="number" id="ddRev" class="rev-inp" value="50" min="0" step="10"></td>
+            <td><input type="number" id="ddUtil" class="util-inp" value="100" min="0" max="100" step="5"></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <hr class="sb-divider">
+    <div>
+      <div class="field-label sens">06 &middot; Bunker Sensitivity Range</div>
+      <div class="sens-grid">
+        <div class="sens-field"><label>Min LSFO ($/MT)</label><input type="number" id="sensMin" value="400" min="0" step="25" onchange="syncSensRules()"></div>
+        <div class="sens-field"><label>Max LSFO ($/MT)</label><input type="number" id="sensMax" value="800" min="0" step="25" onchange="syncSensRules()"></div>
+      </div>
+      <div class="steps-row">
+        <label>Steps:</label>
+        <input type="number" id="sensSteps" value="9" min="3" max="20" step="1">
+        <span style="font-size:9px;color:var(--text3);font-family:var(--mono);">price points</span>
+      </div>
+      <div class="sens-rule">
+        <div class="sens-rule-row"><span>HSFO = LSFO - $100</span><span class="sens-rule-val" id="srHsfo">--</span></div>
+        <div class="sens-rule-row"><span>LSFO (base)</span><span class="sens-rule-val" id="srLsfo">--</span></div>
+        <div class="sens-rule-row"><span>MGO = LSFO + $400</span><span class="sens-rule-val" id="srMgo">--</span></div>
+      </div>
+    </div>
+    <hr class="sb-divider">
+    <button class="run-btn" onclick="runSimulation()">RUN SIMULATION</button>
+  </div>
+  <div class="main">
+    <div class="panel active" id="panelRot"><div id="rotContent"><div class="placeholder"><div class="placeholder-icon">O</div><div class="placeholder-text">Select a vessel and add ports</div><div class="placeholder-sub">Distances auto-calculate from Haversine formula</div></div></div></div>
+    <div class="panel" id="panelCost"><div id="costContent"><div class="placeholder"><div class="placeholder-icon">A</div><div class="placeholder-text">Run the simulation first</div></div></div></div>
+    <div class="panel" id="panelProfit"><div id="profitContent"><div class="placeholder"><div class="placeholder-icon">$</div><div class="placeholder-text">Run the simulation first</div></div></div></div>
+    <div class="panel" id="panelSens"><div id="sensContent"><div class="placeholder"><div class="placeholder-icon">~</div><div class="placeholder-text">Run the simulation first</div></div></div></div>
+  </div>
+</div>
+<script>
+var PWL=[
+['Aden, Yemen',12.7794,45.0367],
+['Abu Dhabi, UAE',24.4539,54.3773],
+['Adelaide, Australia',-34.9285,138.6007],
+['Agadir, Morocco',30.4278,-9.5981],
+['Algeciras, Spain',36.1408,-5.4554],
+['Alexandria, Egypt',31.2001,29.9187],
+['Antwerp, Belgium',51.2194,4.4025],
+['Aqaba, Jordan',29.5321,35.0063],
+['Auckland, New Zealand',-36.8485,174.7633],
+['Bahrain',26.0667,50.5577],
+['Baltimore, USA',39.2904,-76.6122],
+['Bandar Abbas, Iran',27.1832,56.2666],
+['Barcelona, Spain',41.3851,2.1734],
+['Beirut, Lebanon',33.8938,35.5018],
+['Beira, Mozambique',-19.8437,34.8389],
+['Boston, USA',42.3601,-71.0589],
+['Bremerhaven, Germany',53.5393,8.5809],
+['Brisbane, Australia',-27.4698,153.0251],
+['Buenos Aires, Argentina',-34.6037,-58.3816],
+['Busan, South Korea',35.1028,129.0403],
+['Callao, Peru',-12.0464,-77.1428],
+['Cape Town, South Africa',-33.9258,18.4232],
+['Cartagena, Colombia',10.391,-75.4794],
+['Cebu, Philippines',10.3157,123.8854],
+['Charleston, USA',32.7765,-79.9311],
+['Chennai, India',13.0827,80.2707],
+['Chittagong, Bangladesh',22.3475,91.8123],
+['Cochin, India',9.9312,76.2673],
+['Colombo, Sri Lanka',6.9319,79.8478],
+['Colon, Panama',9.3557,-79.9016],
+['Constanta, Romania',44.1598,28.6348],
+['Copenhagen, Denmark',55.6761,12.5683],
+['Dakar, Senegal',14.6928,-17.4467],
+['Dalian, China',38.914,121.6147],
+['Dammam, Saudi Arabia',26.4207,50.0888],
+['Dar es Salaam, Tanzania',-6.7924,39.2083],
+['Damietta, Egypt',31.4149,31.8057],
+['Djibouti',11.572,43.1456],
+['Douala, Cameroon',4.0511,9.7679],
+['Dubai, UAE',25.2048,55.2708],
+['Dunkirk, France',51.0364,2.3763],
+['Durban, South Africa',-29.8579,31.0292],
+['Felixstowe, UK',51.9539,1.3518],
+['Fos-sur-Mer, France',43.4432,4.9393],
+['Fremantle, Australia',-32.0562,115.7433],
+['Gdansk, Poland',54.352,18.6466],
+['Genoa, Italy',44.4056,8.9463],
+['Gioia Tauro, Italy',38.4215,15.8989],
+['Gothenburg, Sweden',57.7089,11.9746],
+['Guangzhou/Nansha, China',22.7536,113.6194],
+['Guayaquil, Ecuador',-2.1894,-79.8891],
+['Hai Phong, Vietnam',20.8449,106.6881],
+['Haifa, Israel',32.8191,34.9983],
+['Halifax, Canada',44.6488,-63.5752],
+['Hamburg, Germany',53.5753,10.0153],
+['Helsinki, Finland',60.1699,24.9384],
+['Ho Chi Minh City, Vietnam',10.7769,106.7009],
+['Hodeidah, Yemen',14.7982,42.9666],
+['Hong Kong',22.3193,114.1694],
+['Houston, USA',29.7604,-95.3698],
+['Incheon, South Korea',37.4563,126.7052],
+['Itajai, Brazil',-26.9078,-48.6656],
+['Istanbul/Ambarli, Turkey',40.9836,28.6908],
+['Izmir, Turkey',38.4237,27.1428],
+['Jakarta, Indonesia',-6.1068,106.8456],
+['Jebel Ali, UAE',24.9857,55.0272],
+['Jeddah, Saudi Arabia',21.4858,39.1925],
+['Jubail, Saudi Arabia',27.0046,49.6581],
+['Kaohsiung, Taiwan',22.6273,120.3014],
+['Karachi, Pakistan',24.8607,67.0011],
+['Keelung, Taiwan',25.1276,121.7392],
+['King Abdullah Port, Saudi Arabia',22.4065,39.1152],
+['Kingston, Jamaica',17.9714,-76.792],
+['Kobe, Japan',34.6778,135.1994],
+['Kolkata, India',22.5726,88.3639],
+['Koper, Slovenia',45.5469,13.7294],
+['Kuwait City, Kuwait',29.3759,47.9774],
+['La Spezia, Italy',44.1024,9.824],
+['Laem Chabang, Thailand',13.0849,100.8986],
+['Lagos/Apapa, Nigeria',6.4531,3.3958],
+['Latakia, Syria',35.5353,35.7714],
+['Le Havre, France',49.4944,0.1079],
+['Limassol, Cyprus',34.6786,33.0413],
+['Liverpool, UK',53.4084,-2.9916],
+['London Gateway, UK',51.5014,0.4836],
+['Long Beach, USA',33.753,-118.1937],
+['Los Angeles, USA',33.729,-118.2617],
+['Luanda, Angola',-8.8368,13.2343],
+['Makassar, Indonesia',-5.1477,119.4327],
+['Manila, Philippines',14.5794,120.9726],
+['Manzanillo, Mexico',19.0511,-104.3155],
+['Maputo, Mozambique',-25.9692,32.5732],
+['Marseille, France',43.2965,5.3698],
+['Medan/Belawan, Indonesia',3.7941,98.7173],
+['Melbourne, Australia',-37.8136,144.9631],
+['Mersin, Turkey',36.8121,34.6415],
+['Miami, USA',25.7617,-80.1918],
+['Mombasa, Kenya',-4.0435,39.6682],
+['Montevideo, Uruguay',-34.9011,-56.1645],
+['Montreal, Canada',45.5017,-73.5673],
+['Mundra, India',22.7383,69.7158],
+['Muscat, Oman',23.588,58.3829],
+['Nagoya, Japan',35.0591,136.8785],
+['Naples, Italy',40.8518,14.2681],
+['New Orleans, USA',29.9511,-90.0715],
+['New York/New Jersey, USA',40.6643,-74.0164],
+['Nhava Sheva, India',18.9322,72.9781],
+['Ningbo, China',29.8683,121.544],
+['Norfolk, USA',36.8468,-76.2851],
+['Oakland, USA',37.8044,-122.2711],
+['Odessa, Ukraine',46.4825,30.7326],
+['Osaka, Japan',34.6554,135.4689],
+['Oslo, Norway',59.9139,10.7522],
+['Palembang, Indonesia',-2.9762,104.7754],
+['Palermo, Italy',38.1157,13.3615],
+['Penang, Malaysia',5.4164,100.3327],
+['Piraeus, Greece',37.9455,23.6222],
+['Port Elizabeth, South Africa',-33.9608,25.5997],
+['Port Klang, Malaysia',3.0319,101.3905],
+['Port Klang West Port, Malaysia',2.9986,101.3739],
+['Port Louis, Mauritius',-20.1619,57.4985],
+['Port Said, Egypt',31.2565,32.2841],
+['Prince Rupert, Canada',54.315,-130.3208],
+['Qingdao, China',36.0671,120.3826],
+['Rio de Janeiro, Brazil',-22.9068,-43.1729],
+['Rotterdam, Netherlands',51.9244,4.4777],
+['Salalah, Oman',17.0151,54.0924],
+['Santos, Brazil',-23.9618,-46.3322],
+['Savannah, USA',32.0809,-81.0912],
+['Seattle/Tacoma, USA',47.6062,-122.3321],
+['Semarang, Indonesia',-6.9932,110.4203],
+['Shanghai, China',31.2304,121.4737],
+['Sharjah, UAE',25.3462,55.4209],
+['Shekou, China',22.4847,113.9152],
+['Shenzhen/Yantian, China',22.5609,114.2568],
+['Singapore',1.2897,103.8501],
+['Sohar, Oman',24.3419,56.7401],
+['Sokhna, Egypt',29.9553,32.5498],
+['Southampton, UK',50.9097,-1.4044],
+['Surabaya, Indonesia',-7.2492,112.7508],
+['Sydney, Australia',-33.8688,151.2093],
+['Taichung, Taiwan',24.2766,120.5491],
+['Tanjung Pelepas, Malaysia',1.3628,103.5544],
+['Tema, Ghana',5.6037,-0.0082],
+['Thessaloniki, Greece',40.6401,22.9444],
+['Tianjin, China',39.0456,117.6997],
+['Tilbury, UK',51.4583,0.36],
+['Toamasina, Madagascar',-18.1491,49.4023],
+['Tokyo, Japan',35.6386,139.7544],
+['Trieste, Italy',45.6495,13.7768],
+['Valencia, Spain',39.4699,-0.3763],
+['Valparaiso, Chile',-33.0472,-71.6127],
+['Vancouver, Canada',49.2827,-123.1207],
+['Visakhapatnam, India',17.6868,83.2185],
+['Xiamen, China',24.4798,118.0894],
+['Yokohama, Japan',35.4437,139.638],
+['Zanzibar, Tanzania',-6.1659,39.2026],
+['Zeebrugge, Belgium',51.3385,3.1832]
+];
+
+var VESSELS=[
+  {name:"HDX HONGYUAN",code:"HDHY",hire:25000,teu:1700,speeds:[{speed:11.0,lsfo:20.0,mgo:null}]},
+  {name:"WAN FU DA",code:"WNFD",hire:30000,teu:1590,speeds:[{speed:11.0,lsfo:24.5,mgo:null},{speed:11.5,lsfo:26.0,mgo:null},{speed:12.0,lsfo:27.5,mgo:null},{speed:12.5,lsfo:28.0,mgo:null},{speed:13.0,lsfo:30.0,mgo:null},{speed:13.5,lsfo:31.0,mgo:null},{speed:14.0,lsfo:32.5,mgo:null},{speed:14.5,lsfo:33.0,mgo:null}]},
+  {name:"TIGER LONGKOU",code:"TGLK",hire:27000,teu:1350,speeds:[{speed:11.0,lsfo:15.0,mgo:3.5},{speed:11.5,lsfo:15.5,mgo:3.5},{speed:12.0,lsfo:16.0,mgo:3.5},{speed:12.5,lsfo:18.0,mgo:3.5},{speed:13.0,lsfo:19.0,mgo:3.5},{speed:13.5,lsfo:21.0,mgo:3.5},{speed:14.0,lsfo:23.2,mgo:3.5},{speed:14.5,lsfo:25.0,mgo:3.5},{speed:15.0,lsfo:27.3,mgo:3.5}]},
+  {name:"CUL NANSHA",code:"CUNS",hire:24000,teu:1600,speeds:[{speed:11.0,lsfo:12.0,mgo:null},{speed:11.5,lsfo:15.0,mgo:null},{speed:12.0,lsfo:18.0,mgo:null},{speed:12.5,lsfo:19.5,mgo:null},{speed:13.0,lsfo:21.0,mgo:null},{speed:13.5,lsfo:24.0,mgo:null},{speed:14.0,lsfo:26.0,mgo:null},{speed:14.5,lsfo:28.0,mgo:null},{speed:15.0,lsfo:30.0,mgo:null},{speed:15.5,lsfo:30.5,mgo:null},{speed:16.0,lsfo:31.0,mgo:null}]},
+  {name:"HAIAN MIND",code:"HAMD",hire:30000,teu:1450,speeds:[{speed:11.0,lsfo:22.0,mgo:null},{speed:11.5,lsfo:22.5,mgo:null},{speed:12.0,lsfo:24.0,mgo:null},{speed:12.5,lsfo:24.5,mgo:null},{speed:13.0,lsfo:27.0,mgo:null},{speed:13.5,lsfo:27.5,mgo:null},{speed:14.0,lsfo:30.0,mgo:null},{speed:14.5,lsfo:32.0,mgo:null},{speed:15.0,lsfo:34.0,mgo:null},{speed:15.5,lsfo:36.0,mgo:null},{speed:16.0,lsfo:39.0,mgo:null}]},
+  {name:"KR TASMAN",code:"KRTM",hire:28000,teu:1220,speeds:[{speed:11.0,lsfo:18.0,mgo:null},{speed:11.5,lsfo:18.5,mgo:null},{speed:12.0,lsfo:19.5,mgo:null},{speed:12.5,lsfo:22.0,mgo:null},{speed:13.0,lsfo:23.0,mgo:null},{speed:13.5,lsfo:25.0,mgo:null},{speed:14.0,lsfo:27.0,mgo:null},{speed:14.5,lsfo:32.0,mgo:null},{speed:15.0,lsfo:35.0,mgo:null},{speed:15.5,lsfo:38.0,mgo:null},{speed:16.0,lsfo:42.0,mgo:null}]},
+  {name:"CUL LAEMCHABANG",code:"CULC",hire:24000,teu:1600,speeds:[{speed:11.0,lsfo:17.0,mgo:null},{speed:11.5,lsfo:18.0,mgo:null},{speed:12.0,lsfo:19.2,mgo:null},{speed:12.5,lsfo:20.4,mgo:null},{speed:13.0,lsfo:22.0,mgo:null},{speed:13.5,lsfo:23.4,mgo:null},{speed:14.0,lsfo:24.9,mgo:null},{speed:14.5,lsfo:26.6,mgo:null},{speed:15.0,lsfo:28.4,mgo:null},{speed:15.5,lsfo:30.0,mgo:null},{speed:16.0,lsfo:32.0,mgo:null}]},
+  {name:"CUL HUMEN",code:"CUHM",hire:25000,teu:1150,speeds:[{speed:12.0,lsfo:23.0,mgo:null},{speed:12.5,lsfo:24.5,mgo:null},{speed:13.0,lsfo:26.0,mgo:null},{speed:13.5,lsfo:27.5,mgo:null},{speed:14.0,lsfo:29.0,mgo:null}]}
+];
+
+var ports=[
+  {name:'Port Klang West Port, Malaysia',lat:2.9986,lon:101.3739,dist:4794,manual:true},
+  {name:'Sokhna, Egypt',lat:29.9553,lon:32.5498,dist:680,manual:true},
+  {name:'Jeddah, Saudi Arabia',lat:21.4858,lon:39.1925,dist:4193,manual:true},
+  {name:'Port Klang West Port, Malaysia',lat:2.9986,lon:101.3739,dist:0,manual:false}
+];
+var legSpeeds=[];
+var legPortStays=[];
+
+function n(v,dp){return v.toLocaleString('en-US',{minimumFractionDigits:dp||0,maximumFractionDigits:dp||0});}
+function usd(v){return '$'+n(Math.round(v));}
+function susd(v){return (v>=0?'+':'')+usd(v);}
+
+function haversine(lat1,lon1,lat2,lon2){
+  var R=3440.065;
+  var dLat=(lat2-lat1)*Math.PI/180;
+  var dLon=(lon2-lon1)*Math.PI/180;
+  var a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
+  return Math.round(R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a)));
+}
+
+function recalcDist(i){
+  if(i<0||i>=ports.length-1)return;
+  if(!ports[i].manual&&ports[i].lat!==null&&ports[i+1]&&ports[i+1].lat!==null){
+    ports[i].dist=haversine(ports[i].lat,ports[i].lon,ports[i+1].lat,ports[i+1].lon);
+  }
+}
+
+function switchTab(t){
+  var ids=['rot','cost','profit','sens'];
+  var tabs=document.querySelectorAll('.tab');
+  ids.forEach(function(id,i){
+    document.getElementById('panel'+id.charAt(0).toUpperCase()+id.slice(1)).classList.toggle('active',id===t);
+    tabs[i].classList.toggle('active',id===t);
+  });
+}
+
+function syncSensRules(){
+  var lsfo=parseFloat(document.getElementById('lsfoPrice').value)||550;
+  document.getElementById('srHsfo').textContent='$'+n(Math.max(0,lsfo-100));
+  document.getElementById('srLsfo').textContent='$'+n(lsfo);
+  document.getElementById('srMgo').textContent='$'+n(lsfo+400);
+}
+function getDefSpeed(){return parseFloat(document.getElementById('defSpeed').value)||13;}
+function getDefStay(){return parseFloat(document.getElementById('portStay').value)||1;}
+function currentVessel(){var c=document.getElementById('vesselSelect').value;return c?VESSELS.find(function(v){return v.code===c;}):null;}
+
+function initLegArrays(){
+  var nL=ports.length-1,nP=ports.length;
+  while(legSpeeds.length<nL)legSpeeds.push(getDefSpeed());
+  while(legSpeeds.length>nL)legSpeeds.pop();
+  while(legPortStays.length<nP)legPortStays.push(getDefStay());
+  while(legPortStays.length>nP)legPortStays.pop();
+}
+function applyDefaults(){
+  var s=getDefSpeed(),st=getDefStay();
+  legSpeeds=legSpeeds.map(function(){return s;});
+  legPortStays=legPortStays.map(function(){return st;});
+  renderPorts();renderRotTable(currentVessel());
+}
+
+function init(){
+  var sel=document.getElementById('vesselSelect');
+  VESSELS.forEach(function(v){var o=document.createElement('option');o.value=v.code;o.textContent=v.name+' ('+v.code+')';sel.appendChild(o);});
+  initLegArrays();renderPorts();syncSensRules();
+}
+
+function onVesselChange(){
+  var code=document.getElementById('vesselSelect').value;
+  var badge=document.getElementById('vesselBadge');
+  if(!code){badge.classList.remove('show');return;}
+  var v=VESSELS.find(function(x){return x.code===code;});
+  document.getElementById('vbName').textContent=v.name;
+  document.getElementById('vbHire').textContent='$'+n(v.hire)+'/day';
+  document.getElementById('vbTeu').textContent=n(v.teu)+' TEU';
+  document.getElementById('vbSpd').textContent=v.speeds[0].speed+'-'+v.speeds[v.speeds.length-1].speed+' kn';
+  document.getElementById('vbPts').textContent=v.speeds.length;
+  document.getElementById('mgoFlag').classList.toggle('show',v.speeds.some(function(s){return s.mgo!==null;}));
+  badge.classList.add('show');
+  renderRotTable(v);
+}
+
+/* ---- AUTOCOMPLETE ---- */
+function renderPorts(){
+  var list=document.getElementById('portList');
+  list.innerHTML='';
+  ports.forEach(function(p,i){
+    var row=document.createElement('div');
+    row.className='port-row';
+    var rmHtml=ports.length>2?'<button class="rm-btn" onclick="removePort('+i+')">x</button>':'';
+    row.innerHTML='<span class="port-num">'+(i+1)+'</span>'+
+      '<div class="ac-wrap"><input class="ac-inp" id="aci'+i+'" type="text" placeholder="Search port..." '+
+      'autocomplete="off" value="'+p.name+'" '+
+      'oninput="filterAC('+i+',this.value)" onfocus="filterAC('+i+',this.value)" onblur="hideAC('+i+')">'+
+      '<div class="ac-drop" id="acd'+i+'"></div></div>'+rmHtml;
+    list.appendChild(row);
+  });
+}
+
+function filterAC(i,q){
+  var dd=document.getElementById('acd'+i);
+  if(!dd)return;
+  var ql=q.toLowerCase().trim();
+  if(ql.length<1){dd.style.display='none';return;}
+  var matches=[],j=0;
+  for(;j<PWL.length&&matches.length<12;j++){
+    if(PWL[j][0].toLowerCase().indexOf(ql)>=0) matches.push(j);
+  }
+  if(!matches.length){dd.style.display='none';return;}
+  dd.innerHTML=matches.map(function(idx){
+    return '<div class="ac-item" onmousedown="selectPortAC('+i+','+idx+')">'+PWL[idx][0]+'</div>';
+  }).join('');
+  dd.style.display='block';
+}
+
+function hideAC(i){
+  setTimeout(function(){var dd=document.getElementById('acd'+i);if(dd)dd.style.display='none';},180);
+}
+
+function selectPortAC(portIdx,pwlIdx){
+  var p=PWL[pwlIdx];
+  ports[portIdx].name=p[0];ports[portIdx].lat=p[1];ports[portIdx].lon=p[2];
+  // Auto-recalc adjacent distances (only if not manually overridden)
+  if(portIdx>0) recalcDist(portIdx-1);
+  recalcDist(portIdx);
+  var inp=document.getElementById('aci'+portIdx);
+  if(inp)inp.value=p[0];
+  var dd=document.getElementById('acd'+portIdx);
+  if(dd)dd.style.display='none';
+  renderRotTable(currentVessel());
+}
+
+function addPort(){
+  ports.splice(ports.length-1,0,{name:'',lat:null,lon:null,dist:0,manual:false});
+  initLegArrays();renderPorts();renderRotTable(currentVessel());
+}
+function removePort(i){
+  if(ports.length<=2)return;
+  ports.splice(i,1);initLegArrays();renderPorts();
+  // Recalc dist for affected leg
+  if(i>0&&i<=ports.length-1) recalcDist(i-1);
+  renderRotTable(currentVessel());
+}
+
+function getRate(vessel,speed,type){
+  var pts=vessel.speeds.filter(function(s){return s[type]!==null;}).sort(function(a,b){return a.speed-b.speed;});
+  if(!pts.length)return 0;
+  var ex=pts.find(function(s){return s.speed===speed;});
+  if(ex)return ex[type];
+  for(var i=0;i<pts.length-1;i++){
+    if(speed>pts[i].speed&&speed<pts[i+1].speed)
+      return pts[i][type]+(pts[i+1][type]-pts[i][type])*(speed-pts[i].speed)/(pts[i+1].speed-pts[i].speed);
+  }
+  return speed<pts[0].speed?pts[0][type]:pts[pts.length-1][type];
+}
+
+function syncFromRotInputs(){
+  for(var i=0;i<ports.length-1;i++){
+    var si=document.getElementById('ls'+i);if(si)legSpeeds[i]=parseFloat(si.value)||getDefSpeed();
+    var di=document.getElementById('di'+i);
+    if(di){
+      var dv=parseFloat(di.value)||0;
+      if(dv!==ports[i].dist){ports[i].dist=dv;ports[i].manual=true;}
+    }
+  }
+  for(var j=0;j<ports.length;j++){
+    var pj=document.getElementById('ps'+j);if(pj)legPortStays[j]=parseFloat(pj.value)||0;
+  }
+}
+
+/* ---- ROTATION TAB ---- */
+function renderRotTable(vessel){
+  initLegArrays();
+  var numLegs=ports.length-1;
+  var hasVessel=vessel!==null;
+  var hasMgo=hasVessel&&vessel.speeds.some(function(s){return s.mgo!==null;});
+  var lsfoPx=parseFloat(document.getElementById('lsfoPrice').value)||550;
+  var mgoPx=parseFloat(document.getElementById('mgoPrice').value)||750;
+  var totalSeaDays=0,totalPortDays=0,totalNM=0;
+  var legData=[];
+  for(var i=0;i<numLegs;i++){
+    var spd=legSpeeds[i]||getDefSpeed();
+    var dist=ports[i].dist||0;
+    var sd=dist>0?dist/spd/24:0;
+    var stay=legPortStays[i]||0;
+    var lsfoMT=hasVessel?getRate(vessel,spd,'lsfo')*sd:0;
+    var mgoMT=hasMgo?getRate(vessel,spd,'mgo')*sd:0;
+    var bunkLeg=lsfoMT*lsfoPx+mgoMT*mgoPx;
+    totalSeaDays+=sd;totalPortDays+=stay;totalNM+=dist;
+    legData.push({from:ports[i].name,to:ports[i+1].name,dist:dist,manual:ports[i].manual,spd:spd,seaDays:sd,stay:stay,lsfoMT:lsfoMT,mgoMT:mgoMT,bunker:bunkLeg});
+  }
+  var lastStay=legPortStays[ports.length-1]||0;
+  totalPortDays+=lastStay;
+  var totalDays=totalSeaDays+totalPortDays;
+  var hire=hasVessel?vessel.hire*totalDays:0;
+
+  var rows=legData.map(function(l,i){
+    var distCls='rot-edit dist-inp '+(l.manual?'manual':'auto');
+    return '<tr>'+
+      '<td><span class="leg-badge">L'+(i+1)+'</span></td>'+
+      '<td>'+l.from+'</td>'+
+      '<td><input id="di'+i+'" type="number" class="'+distCls+'" value="'+Math.round(l.dist)+'" min="0" step="1" onchange="onDistChange('+i+',this.value)">'+
+        (l.manual?'':'<span class="auto-badge">auto</span>')+
+      '</td>'+
+      '<td><input id="ls'+i+'" type="number" class="rot-edit speed-inp" value="'+l.spd.toFixed(1)+'" min="8" max="22" step="0.5" onchange="onLegSpeedChange('+i+',this.value)"></td>'+
+      '<td>'+(l.dist>0?l.seaDays.toFixed(2)+' d':'--')+'</td>'+
+      '<td><input id="ps'+i+'" type="number" class="rot-edit stay-inp" value="'+l.stay.toFixed(1)+'" min="0" step="0.5" onchange="onPortStayChange('+i+',this.value)"></td>'+
+      '<td class="c-bunk">'+(hasVessel&&l.dist>0?n(l.lsfoMT,1):'--')+'</td>'+
+      (hasMgo?'<td class="c-bunk">'+(l.dist>0?n(l.mgoMT,1):'--')+'</td>':'')+
+    '</tr>';
+  }).join('');
+
+  rows+='<tr>'+
+    '<td><span class="leg-badge" style="background:rgba(57,211,83,.1);color:var(--teal);border-color:rgba(57,211,83,.2)">ARR</span></td>'+
+    '<td>'+ports[ports.length-1].name+'</td>'+
+    '<td style="color:var(--text3)">--</td><td style="color:var(--text3)">--</td><td style="color:var(--text3)">--</td>'+
+    '<td><input id="ps'+(ports.length-1)+'" type="number" class="rot-edit stay-inp" value="'+lastStay.toFixed(1)+'" min="0" step="0.5" onchange="onPortStayChange('+(ports.length-1)+',this.value)"></td>'+
+    '<td style="color:var(--text3)">--</td>'+(hasMgo?'<td style="color:var(--text3)">--</td>':'')+
+  '</tr>';
+
+  rows+='<tr class="totals-row">'+
+    '<td></td><td><strong style="color:var(--text)">TOTALS</strong></td>'+
+    '<td><strong style="color:var(--amber)">'+n(totalNM)+' nm</strong></td>'+
+    '<td></td>'+
+    '<td><strong>'+totalSeaDays.toFixed(2)+' d</strong></td>'+
+    '<td><strong>'+totalPortDays.toFixed(2)+' d</strong></td>'+
+    '<td class="c-bunk">'+(hasVessel?'<strong>'+n(legData.reduce(function(s,l){return s+l.lsfoMT;},0),1)+' MT</strong>':'--')+'</td>'+
+    (hasMgo?'<td class="c-bunk"><strong>'+n(legData.reduce(function(s,l){return s+l.mgoMT;},0),1)+' MT</strong></td>':'')+
+  '</tr>';
+
+  var summary='<div class="rot-summary">'+
+    mkCard('Sea distance',n(totalNM)+' nm',numLegs+' legs','accent')+
+    mkCard('Sea days',totalSeaDays.toFixed(1)+' d','Ocean passage','accent')+
+    mkCard('Port days',totalPortDays.toFixed(1)+' d',(ports.length)+' calls','amber')+
+    mkCard('Total days',totalDays.toFixed(1)+' d','Sea + port','green')+
+    mkCard('Charter hire',(hasVessel?usd(hire):'--'),(hasVessel?'$'+n(vessel.hire)+'/d x '+totalDays.toFixed(1)+'d':'Select vessel'),'purple')+
+  '</div>';
+
+  var thead='<thead><tr>'+
+    '<th style="text-align:left">Leg</th>'+
+    '<th style="text-align:left">From</th>'+
+    '<th class="amber">Dist (nm)</th>'+
+    '<th class="teal">Speed (kn)</th>'+
+    '<th>Sea time</th>'+
+    '<th class="teal">Port stay (d)</th>'+
+    '<th class="cb">LSFO MT</th>'+
+    (hasMgo?'<th class="cb">MGO MT</th>':'')+
+  '</tr></thead>';
+
+  document.getElementById('rotContent').innerHTML=
+    '<div class="rot-header-row">'+
+      '<div class="section-head" style="margin:0;border:none;padding:0;">Port Rotation Schedule'+(hasVessel?' -- '+vessel.name:'')+'</div>'+
+      '<button class="recalc-btn" onclick="runSimulation()">Recalculate All Tabs</button>'+
+    '</div>'+
+    '<div style="margin-bottom:12px;font-size:10px;color:var(--text2)">Distances auto-calculated (Haversine great-circle). Edit Dist column to override. Speed and port stay editable per leg.</div>'+
+    summary+
+    '<div class="rot-table-wrap"><table class="rot-table">'+thead+'<tbody>'+rows+'</tbody></table></div>'+
+    '<div class="notes"><strong>Notes:</strong><br>'+
+    '1. Dist (nm) is auto-calculated using Haversine (great-circle). "auto" badge = calculated; amber = manually overridden.<br>'+
+    '2. Actual sea routes (via Suez, Malacca) may differ from great-circle. Override dist values as needed.<br>'+
+    '3. Port stay shown is stay at the departure port for each leg. ARR row = stay at final port.<br>'+
+    '4. Click Recalculate All Tabs to propagate per-leg settings to all analysis tabs.<br>'+
+    '</div>';
+}
+
+function onDistChange(i,val){
+  ports[i].dist=parseFloat(val)||0;ports[i].manual=true;
+  renderRotTable(currentVessel());
+}
+function onLegSpeedChange(i,val){
+  legSpeeds[i]=parseFloat(val)||getDefSpeed();renderRotTable(currentVessel());
+}
+function onPortStayChange(i,val){
+  legPortStays[i]=parseFloat(val)||0;renderRotTable(currentVessel());
+}
+
+/* ---- REVENUE MODEL ---- */
+function getRevenue(vessel){
+  var hhRev=parseFloat(document.getElementById('hhRev').value)||0;
+  var bhRev=parseFloat(document.getElementById('bhRev').value)||0;
+  var ddRev=parseFloat(document.getElementById('ddRev').value)||0;
+  var hhUtil=(parseFloat(document.getElementById('hhUtil').value)||100)/100;
+  var bhUtil=(parseFloat(document.getElementById('bhUtil').value)||100)/100;
+  var ddUtil=(parseFloat(document.getElementById('ddUtil').value)||100)/100;
+  var teu=vessel.teu;
+  var hhTeu=Math.round(teu*hhUtil),bhTeu=Math.round(teu*bhUtil),ddTeu=Math.round(teu*ddUtil);
+  var hhRev_=hhTeu*hhRev,bhRev_=bhTeu*bhRev,ddRev_=ddTeu*ddRev;
+  var total=hhRev_+bhRev_+ddRev_;
+  return {total:total,hh:{teu:hhTeu,rate:hhRev,rev:hhRev_,util:Math.round(hhUtil*100)},
+          bh:{teu:bhTeu,rate:bhRev,rev:bhRev_,util:Math.round(bhUtil*100)},
+          dd:{teu:ddTeu,rate:ddRev,rev:ddRev_,util:Math.round(ddUtil*100)}};
+}
+
+/* ---- MAIN SIMULATION ---- */
+function runSimulation(){
+  syncFromRotInputs();
+  var code=document.getElementById('vesselSelect').value;
+  if(!code){alert('Please select a vessel.');return;}
+  var vessel=VESSELS.find(function(v){return v.code===code;});
+  initLegArrays();
+  var legs=[];
+  for(var i=0;i<ports.length-1;i++){
+    if(!ports[i].dist||ports[i].dist<=0){alert('No distance for leg '+(i+1)+'. Select ports or enter distance manually.');return;}
+    legs.push({from:ports[i].name,to:ports[i+1].name,dist:ports[i].dist,speed:legSpeeds[i]||getDefSpeed()});
+  }
+  var totalNM=legs.reduce(function(s,l){return s+l.dist;},0);
+  var totalSeaDays=legs.reduce(function(s,l){return s+l.dist/l.speed/24;},0);
+  var totalPortDays=legPortStays.reduce(function(s,v){return s+v;},0);
+  var totalDays=totalSeaDays+totalPortDays;
+  var lsfoPx=parseFloat(document.getElementById('lsfoPrice').value)||550;
+  var mgoPx=parseFloat(document.getElementById('mgoPrice').value)||750;
+  var hsfoPx=parseFloat(document.getElementById('hsfoPrice').value)||450;
+  var sensMin=parseFloat(document.getElementById('sensMin').value)||300;
+  var sensMax=parseFloat(document.getElementById('sensMax').value)||800;
+  var sensSteps=Math.max(3,Math.min(20,parseInt(document.getElementById('sensSteps').value)||9));
+  var hasMgo=vessel.speeds.some(function(s){return s.mgo!==null;});
+  var hire=vessel.hire;
+  var revData=getRevenue(vessel);
+  var revenue=revData.total;
+  var speedList=vessel.speeds.map(function(s){return s.speed;}).sort(function(a,b){return a-b;});
+  var midIdx=Math.floor(speedList.length/2);
+
+  // Actual per-leg bunker
+  var actualLsfoMT=0,actualMgoMT=0;
+  legs.forEach(function(l){var sd=l.dist/l.speed/24;actualLsfoMT+=getRate(vessel,l.speed,'lsfo')*sd;actualMgoMT+=hasMgo?getRate(vessel,l.speed,'mgo')*sd:0;});
+  var actualBunker=actualLsfoMT*lsfoPx+actualMgoMT*mgoPx;
+  var actualHire=hire*totalDays;
+  var actualTotal=actualBunker+actualHire;
+  var actualNet=revenue-actualTotal;
+  var actualPpd=actualNet/totalDays;
+  var actualPph=(revenue-actualBunker)/totalDays;
+
+  // Speed sweep
+  var costRows=speedList.map(function(spd){
+    var sd=totalNM/spd/24,td=sd+totalPortDays;
+    var lm=getRate(vessel,spd,'lsfo')*sd,mm=hasMgo?getRate(vessel,spd,'mgo')*sd:0;
+    var bk=lm*lsfoPx+mm*mgoPx,hc=hire*td,tot=bk+hc,net=revenue-tot;
+    return {spd:spd,seaDays:sd,totalDays:td,lsfoMT:lm,mgoMT:mm,bunker:bk,hire:hc,total:tot,net:net,ppd:net/td,pph:(revenue-bk)/td};
+  });
+  var midRow=costRows[midIdx];
+  var maxCost=Math.max.apply(null,costRows.map(function(r){return r.total;}));
+  var maxDays=Math.max.apply(null,costRows.map(function(r){return r.totalDays;}));
+
+  // Sensitivity: LSFO price steps x all speeds
+  var sensLsfoPrices=[];
+  for(var si=0;si<sensSteps;si++) sensLsfoPrices.push(sensMin+si*(sensMax-sensMin)/(sensSteps-1));
+  var sensMatrix=sensLsfoPrices.map(function(lp){
+    var hp=Math.max(0,lp-100),mp=lp+400;
+    var cols=speedList.map(function(spd){
+      var sd=totalNM/spd/24,td=sd+totalPortDays;
+      var lm=getRate(vessel,spd,'lsfo')*sd,mm=hasMgo?getRate(vessel,spd,'mgo')*sd:0;
+      var bk=lm*lp+mm*mp,hc=hire*td,net=revenue-bk-hc;
+      return {ppd:net/td,pph:(revenue-bk)/td};
+    });
+    return {lsfo:lp,hsfo:hp,mgo:mp,cols:cols};
+  });
+
+  // Break-even LSFO at mid speed
+  var beLsfoMT=getRate(vessel,midRow.spd,'lsfo')*midRow.seaDays;
+  var beMgoMT=hasMgo?getRate(vessel,midRow.spd,'mgo')*midRow.seaDays:0;
+  var beDenom=beLsfoMT+beMgoMT;
+  var breakEvenLsfo=beDenom>0?(revenue-beMgoMT*400-hire*midRow.totalDays)/beDenom:null;
+
+  renderRotTable(vessel);
+
+  /* COST TAB */
+  var revBreakdown='HH: '+n(revData.hh.teu)+' TEU x $'+n(revData.hh.rate)+' = '+usd(revData.hh.rev)+
+    ' | BH: '+n(revData.bh.teu)+' TEU x $'+n(revData.bh.rate)+' = '+usd(revData.bh.rev)+
+    ' | DD: '+n(revData.dd.teu)+' TEU x $'+n(revData.dd.rate)+' = '+usd(revData.dd.rev);
+  document.getElementById('costContent').innerHTML=
+    '<div class="section-head">Route Summary -- '+vessel.name+' ('+vessel.code+')</div>'+
+    '<div class="cards-row cards-5">'+
+      mkCard('Sea distance',n(totalNM)+' nm',legs.length+' legs','accent')+
+      mkCard('Voyage days',totalDays.toFixed(1)+' d',totalSeaDays.toFixed(1)+' sea + '+totalPortDays.toFixed(1)+' port','accent')+
+      mkCard('Loadability',n(vessel.teu)+' TEU','Capacity','teal')+
+      mkCard('Charter hire','$'+n(hire)+'/day','Voyage: '+usd(actualHire),'purple')+
+      mkCard('Actual voyage cost',usd(actualTotal),'Per-leg schedule','green')+
+    '</div>'+
+    '<div class="section-head">Leg Breakdown</div>'+
+    '<div class="table-wrap" style="margin-bottom:16px">'+legTable(legs,totalNM)+'</div>'+
+    '<div class="section-head">Speed Sweep -- Uniform Speed Simulation</div>'+
+    '<div class="table-wrap">'+costTable(costRows,midIdx,hasMgo)+'</div>'+
+    '<div class="chart-grid">'+costChart(costRows,midIdx,maxCost)+daysChart(costRows,midIdx,maxDays,totalPortDays)+'</div>'+
+    '<div class="notes"><strong>Notes:</strong><br>'+
+    '1. Actual voyage cost uses per-leg speeds from Port Rotation tab.<br>'+
+    '2. Speed sweep simulates uniform speed across all legs for comparison.<br>'+
+    '3. Revenue streams: '+revBreakdown+'.<br>'+
+    '</div>';
+
+  /* PROFIT TAB */
+  document.getElementById('profitContent').innerHTML=
+    '<div class="section-head">Profitability Analysis -- '+vessel.name+' ('+vessel.code+')</div>'+
+    '<div class="info-box">'+
+      '<strong>Revenue breakdown:</strong><br>'+
+      'Headhaul: '+n(revData.hh.teu)+' TEU ('+revData.hh.util+'%) x $'+n(revData.hh.rate)+' = <strong>'+usd(revData.hh.rev)+'</strong><br>'+
+      'Backhaul: '+n(revData.bh.teu)+' TEU ('+revData.bh.util+'%) x $'+n(revData.bh.rate)+' = <strong>'+usd(revData.bh.rev)+'</strong><br>'+
+      'Double Dip: '+n(revData.dd.teu)+' TEU ('+revData.dd.util+'%) x $'+n(revData.dd.rate)+' = <strong>'+usd(revData.dd.rev)+'</strong><br>'+
+      'Total voyage revenue: <strong>'+usd(revenue)+'</strong>'+
+    '</div>'+
+    '<div class="cards-row cards-4">'+
+      mkCard('Total revenue',usd(revenue),'All 3 streams','teal')+
+      mkCard('Actual net profit',susd(Math.round(actualNet)),'Per-leg schedule',actualNet>=0?'green':'red')+
+      mkCard('Profit/day (actual)',susd(Math.round(actualPpd))+'/d','After hire',actualPpd>=0?'teal':'red')+
+      mkCard('P/day+hire (actual)',susd(Math.round(actualPph))+'/d','Before hire',actualPph>=0?'teal':'amber')+
+    '</div>'+
+    '<div class="section-head">Speed Sweep -- Profitability</div>'+
+    '<div class="table-wrap">'+profTable(costRows,midIdx,revenue)+'</div>'+
+    '<div class="chart-grid">'+profitChart(costRows,midIdx,revenue)+pdayChart(costRows,midIdx)+'</div>'+
+    '<div class="notes"><strong>Definitions:</strong><br>'+
+    '<strong>Profit/day</strong> = (Revenue - Bunker - Hire) / Total days.<br>'+
+    '<strong>P/day + hire</strong> = (Revenue - Bunker) / Total days -- contribution margin before financing.<br>'+
+    'Revenue = HH '+usd(revData.hh.rev)+' + BH '+usd(revData.bh.rev)+' + DD '+usd(revData.dd.rev)+' = '+usd(revenue)+'.<br>'+
+    '</div>';
+
+  /* SENS TAB */
+  var beText=breakEvenLsfo!==null&&breakEvenLsfo>0?
+    'Break-even LSFO at mid speed ('+midRow.spd.toFixed(1)+' kn): <strong>$'+n(Math.round(breakEvenLsfo))+'/MT</strong>'+
+    (breakEvenLsfo<sensMin?' -- below range, profitable across all steps.':breakEvenLsfo>sensMax?' -- above range, loss-making across all steps.':', highlighted in tables below.'):
+    'Break-even LSFO could not be calculated.';
+  document.getElementById('sensContent').innerHTML=
+    '<div class="section-head">Bunker Price Sensitivity -- '+vessel.name+' ('+vessel.code+')</div>'+
+    '<div class="sens-info-box">HSFO = LSFO - $100 | MGO = LSFO + $400. Revenue = '+usd(revenue)+'. '+sensSteps+' LSFO steps: $'+n(sensMin)+' to $'+n(sensMax)+'/MT.</div>'+
+    '<div class="be-banner">'+beText+'</div>'+
+    '<div class="section-head">Profit/day -- Bunker price (rows) x Speed (columns)</div>'+
+    '<div class="table-wrap">'+sensTable(sensMatrix,speedList,breakEvenLsfo,'ppd')+'</div>'+
+    '<div class="section-head">Profit/day + Hire -- Bunker price (rows) x Speed (columns)</div>'+
+    '<div class="table-wrap">'+sensTable(sensMatrix,speedList,breakEvenLsfo,'pph')+'</div>'+
+    '<div class="section-head">Mid-speed Profit/day vs LSFO Price ('+midRow.spd.toFixed(1)+' kn)</div>'+
+    '<div class="chart-grid"><div style="grid-column:1/-1">'+sensMidChart(sensMatrix,midIdx,breakEvenLsfo)+'</div></div>'+
+    '<div class="notes"><strong>Notes:</strong><br>'+
+    '1. Each cell shows profit metric in USD/day. Green = profitable, red = loss-making.<br>'+
+    '2. Rows = LSFO price steps with derived HSFO/MGO. Columns = all TCD speed points.<br>'+
+    '3. Speed sweep uses uniform speed across all legs; port days fixed at '+totalPortDays.toFixed(1)+'d.<br>'+
+    (breakEvenLsfo!==null&&breakEvenLsfo>0?'4. Break-even LSFO at mid speed: $'+n(Math.round(breakEvenLsfo))+'/MT.<br>':'')+
+    '</div>';
+}
+
+function heatClass(v,maxAbs){
+  if(maxAbs===0)return '';
+  var r=Math.abs(v)/maxAbs;
+  if(v>=0)return r>0.66?'heat-pos-hi':r>0.33?'heat-pos-md':'heat-pos-lo';
+  return r>0.66?'heat-neg-hi':r>0.33?'heat-neg-md':'heat-neg-lo';
+}
+
+function sensTable(sensMatrix,speedList,bePrice,field){
+  var allVals=[];
+  sensMatrix.forEach(function(row){row.cols.forEach(function(c){allVals.push(Math.abs(c[field]));});});
+  var maxAbs=Math.max.apply(null,allVals)||1;
+  var gap=sensMatrix.length>1?Math.abs(sensMatrix[1].lsfo-sensMatrix[0].lsfo)/2:25;
+  var hdr='<thead><tr><th style="text-align:left">LSFO ($/MT)</th><th class="cs">HSFO</th><th class="cs">MGO</th>'+
+    speedList.map(function(s){return '<th class="cp">'+s.toFixed(1)+'kn</th>';}).join('')+'</tr></thead>';
+  var body='<tbody>'+sensMatrix.map(function(row,ri){
+    var isBe=bePrice!==null&&Math.abs(row.lsfo-bePrice)<gap;
+    return '<tr class="'+(isBe?'mid':ri%2===0?'sens-even':'')+'">'+ 
+      '<td style="text-align:left">'+(isBe?'<span class="cell-pill pill-be">$'+n(Math.round(row.lsfo))+'</span>':'<strong>$'+n(Math.round(row.lsfo))+'</strong>')+'</td>'+
+      '<td style="color:var(--text3)">$'+n(Math.round(row.hsfo))+'</td>'+
+      '<td style="color:var(--text3)">$'+n(Math.round(row.mgo))+'</td>'+
+      row.cols.map(function(c){var v=c[field];return '<td class="'+heatClass(v,maxAbs)+'">'+(v>=0?'+':'')+usd(Math.round(v))+'</td>';}).join('')+
+    '</tr>';
+  }).join('')+'</tbody>';
+  return '<table style="min-width:'+(350+speedList.length*75)+'px">'+hdr+body+'</table>';
+}
+
+function sensMidChart(sensMatrix,midIdx,bePrice){
+  var vals=sensMatrix.map(function(r){return r.cols[midIdx].ppd;});
+  var maxAbs=Math.max.apply(null,vals.map(Math.abs))||1;
+  var gap=sensMatrix.length>1?Math.abs(sensMatrix[1].lsfo-sensMatrix[0].lsfo)/2:25;
+  var bars=sensMatrix.map(function(row){
+    var v=row.cols[midIdx].ppd,pos=v>=0;
+    var pct=(Math.abs(v)/maxAbs*47).toFixed(1);
+    var isBe=bePrice!==null&&Math.abs(row.lsfo-bePrice)<gap;
+    return '<div class="bar-row"><span class="bar-lbl wide">$'+n(Math.round(row.lsfo))+'</span>'+
+      '<div class="bar-track" style="position:relative">'+
+        '<div style="width:50%;height:100%;display:flex;justify-content:flex-end">'+(!pos?'<div class="bar-seg" style="width:'+(pct*2)+'%;background:'+(isBe?'var(--amber)':'rgba(248,81,73,.5)')+'"></div>':'')+'</div>'+
+        '<div style="width:1px;background:var(--border2);height:100%;flex-shrink:0"></div>'+
+        '<div style="width:50%;height:100%;display:flex">'+(pos?'<div class="bar-seg" style="width:'+(pct*2)+'%;background:'+(isBe?'var(--accent)':'rgba(57,211,83,.5)')+'"></div>':'')+'</div>'+
+      '</div>'+
+      '<span class="bar-val '+(pos?'pos':'neg')+'">'+susd(Math.round(v))+'/d</span></div>';
+  }).join('');
+  return '<div class="chart-box" style="max-width:100%"><div class="chart-title">Profit/day at mid speed vs LSFO price</div>'+
+    '<div class="legend"><div class="leg-item"><div class="leg-dot" style="background:var(--teal)"></div>Profitable</div>'+
+    '<div class="leg-item"><div class="leg-dot" style="background:var(--red)"></div>Loss-making</div></div>'+bars+'</div>';
+}
+
+/* SHARED HELPERS */
+function mkCard(lbl,val,sub,cls){
+  var cc={green:'green',teal:'teal',purple:'purple',accent:'accent',red:'red',amber:'amber'};
+  var brd=cls==='green'||cls==='teal'?'hi':cls==='purple'?'lo':cls==='amber'?'warn':'';
+  return '<div class="card '+brd+'"><div class="card-lbl">'+lbl+'</div><div class="card-val '+(cc[cls]||'')+'">'+val+'</div><div class="card-sub">'+sub+'</div></div>';
+}
+function legTable(legs,totalNM){
+  return '<table style="min-width:480px"><thead><tr><th style="text-align:left">#</th><th style="text-align:left">From</th><th style="text-align:left">To</th><th>Speed</th><th>Distance (nm)</th><th>%</th></tr></thead><tbody>'+
+    legs.map(function(l,i){return '<tr><td style="text-align:left;color:var(--text3)">'+(i+1)+'</td><td style="text-align:left;color:var(--text)">'+l.from+'</td><td style="text-align:left;color:var(--text)">'+l.to+'</td><td class="c-be">'+l.speed.toFixed(1)+' kn</td><td>'+n(l.dist)+'</td><td style="color:var(--text2)">'+(l.dist/totalNM*100).toFixed(1)+'%</td></tr>';}).join('')+
+    '<tr style="border-top:1px solid var(--border2)"><td colspan="4" style="text-align:left"><strong style="color:var(--text)">Total</strong></td><td><strong>'+n(totalNM)+'</strong></td><td></td></tr></tbody></table>';
+}
+function costTable(rows,midIdx,hasMgo){
+  return '<table style="min-width:560px"><thead><tr><th style="text-align:left">Speed</th><th>Sea days</th><th>Total days</th><th class="cb">LSFO MT</th>'+(hasMgo?'<th class="cb">MGO MT</th>':'')+'<th class="cb">Bunker</th><th class="ch">Hire</th><th class="ct">Total</th><th class="ct">$/day</th></tr></thead><tbody>'+
+    rows.map(function(r,i){
+      var isMid=i===midIdx;
+      var tag=i===0?'<span class="tag tag-g">SLOW</span>':i===rows.length-1?'<span class="tag tag-a">FAST</span>':isMid?'<span class="tag tag-c">MID</span>':'';
+      var bPct=Math.round(r.bunker/r.total*100);
+      return '<tr'+(isMid?' class="mid"':'')+'><td style="text-align:left">'+r.spd.toFixed(1)+' kn'+tag+'</td><td>'+r.seaDays.toFixed(1)+'</td><td>'+r.totalDays.toFixed(1)+'</td>'+
+        '<td class="c-bunk">'+n(r.lsfoMT,0)+'</td>'+(hasMgo?'<td class="c-bunk">'+n(r.mgoMT,0)+'</td>':'')+
+        '<td class="c-bunk">'+usd(r.bunker)+' <span style="font-size:8px;color:var(--text3)">'+bPct+'%</span></td>'+
+        '<td class="c-hire">'+usd(r.hire)+' <span style="font-size:8px;color:var(--text3)">'+(100-bPct)+'%</span></td>'+
+        '<td class="c-tot">'+usd(r.total)+'</td><td style="color:var(--text2)">'+usd(r.total/r.totalDays)+'</td></tr>';
+    }).join('')+'</tbody></table>';
+}
+function profTable(rows,midIdx,revenue){
+  return '<table style="min-width:600px"><thead><tr><th style="text-align:left">Speed</th><th>Total days</th><th class="cb">Bunker</th><th class="ch">Hire</th><th class="ct">Total cost</th><th class="ct">Revenue</th><th class="cp">Net profit</th><th class="cp">Profit/day</th><th class="cp">P/day+hire</th></tr></thead><tbody>'+
+    rows.map(function(r,i){
+      var isMid=i===midIdx;
+      var tag=i===0?'<span class="tag tag-g">SLOW</span>':i===rows.length-1?'<span class="tag tag-a">FAST</span>':isMid?'<span class="tag tag-c">MID</span>':'';
+      var pc=r.net>=0?'c-prof':'c-neg',pdc=r.ppd>=0?'c-prof':'c-neg',phc=r.pph>=0?'c-prof':'c-neg';
+      return '<tr'+(isMid?' class="mid"':'')+'><td style="text-align:left">'+r.spd.toFixed(1)+' kn'+tag+'</td><td>'+r.totalDays.toFixed(1)+'</td>'+
+        '<td class="c-bunk">'+usd(r.bunker)+'</td><td class="c-hire">'+usd(r.hire)+'</td>'+
+        '<td class="c-tot">'+usd(r.total)+'</td><td class="c-tot">'+usd(revenue)+'</td>'+
+        '<td class="'+pc+'">'+susd(r.net)+'</td><td class="'+pdc+'">'+susd(r.ppd)+'/d</td><td class="'+phc+'">'+susd(r.pph)+'/d</td></tr>';
+    }).join('')+'</tbody></table>';
+}
+function costChart(rows,midIdx,maxCost){
+  var bars=rows.map(function(r,i){
+    var isMid=i===midIdx,hPct=(r.hire/maxCost*100).toFixed(1),bPct=(r.bunker/maxCost*100).toFixed(1);
+    return '<div class="bar-row"><span class="bar-lbl">'+r.spd.toFixed(1)+'</span>'+
+      '<div class="bar-track"><div class="bar-seg" style="width:'+hPct+'%;background:'+(isMid?'var(--purple)':'rgba(188,140,255,.3)')+'"></div>'+
+      '<div class="bar-seg" style="width:'+bPct+'%;background:'+(isMid?'var(--amber)':'rgba(210,153,34,.3)')+'"></div></div>'+
+      '<span class="bar-val neu">'+usd(r.total)+'</span></div>';
+  }).join('');
+  return '<div class="chart-box"><div class="chart-title">Total cost by speed</div><div class="legend"><div class="leg-item"><div class="leg-dot" style="background:var(--purple)"></div>Hire</div><div class="leg-item"><div class="leg-dot" style="background:var(--amber)"></div>Bunker</div></div>'+bars+'</div>';
+}
+function daysChart(rows,midIdx,maxDays,portDays){
+  var bars=rows.map(function(r,i){
+    var isMid=i===midIdx,sPct=(r.seaDays/maxDays*100).toFixed(1),pPct=(portDays/maxDays*100).toFixed(1);
+    return '<div class="bar-row"><span class="bar-lbl">'+r.spd.toFixed(1)+'</span>'+
+      '<div class="bar-track"><div class="bar-seg" style="width:'+sPct+'%;background:'+(isMid?'var(--accent)':'rgba(0,212,255,.28)')+'"></div>'+
+      '<div class="bar-seg" style="width:'+pPct+'%;background:var(--border2)"></div></div>'+
+      '<span class="bar-val neu">'+r.totalDays.toFixed(1)+'d</span></div>';
+  }).join('');
+  return '<div class="chart-box"><div class="chart-title">Voyage days by speed</div><div class="legend"><div class="leg-item"><div class="leg-dot" style="background:var(--accent)"></div>Sea</div><div class="leg-item"><div class="leg-dot" style="background:var(--border2)"></div>Port</div></div>'+bars+'</div>';
+}
+function profitChart(rows,midIdx,revenue){
+  var revBase=Math.max(Math.max.apply(null,rows.map(function(r){return Math.abs(r.net);})),revenue)||1;
+  var bars=rows.map(function(r,i){
+    var isMid=i===midIdx,pos=r.net>=0,rPct=(revenue/revBase*100).toFixed(1);
+    return '<div class="bar-row"><span class="bar-lbl">'+r.spd.toFixed(1)+'</span>'+
+      '<div class="bar-track"><div class="bar-seg" style="width:'+rPct+'%;background:'+(isMid?'rgba(57,211,83,.45)':'rgba(57,211,83,.15)')+'"></div></div>'+
+      '<span class="bar-val '+(pos?'pos':'neg')+'">'+susd(Math.round(r.net))+'</span></div>';
+  }).join('');
+  return '<div class="chart-box"><div class="chart-title">Net voyage profit by speed</div><div class="legend"><div class="leg-item"><div class="leg-dot" style="background:var(--green)"></div>Revenue bar | value = net profit</div></div>'+bars+'</div>';
+}
+function pdayChart(rows,midIdx){
+  var maxAbs=Math.max.apply(null,rows.map(function(r){return Math.max(Math.abs(r.ppd),Math.abs(r.pph),1);}))||1;
+  var bars=rows.map(function(r,i){
+    var isMid=i===midIdx,pos=r.ppd>=0,p1=(Math.abs(r.ppd)/maxAbs*50).toFixed(1),p2=(Math.abs(r.pph)/maxAbs*50).toFixed(1);
+    return '<div class="bar-row"><span class="bar-lbl">'+r.spd.toFixed(1)+'</span>'+
+      '<div class="bar-track"><div class="bar-seg" style="width:'+p2+'%;background:'+(isMid?'rgba(0,212,255,.6)':'rgba(0,212,255,.2)')+'"></div>'+
+      '<div class="bar-seg" style="width:'+p1+'%;background:'+(pos?(isMid?'var(--teal)':'rgba(57,211,83,.3)'):(isMid?'var(--red)':'rgba(248,81,73,.3)'))+'"></div></div>'+
+      '<span class="bar-val '+(pos?'pos':'neg')+'">'+susd(Math.round(r.ppd))+'/d</span></div>';
+  }).join('');
+  return '<div class="chart-box"><div class="chart-title">Profit per day by speed</div><div class="legend"><div class="leg-item"><div class="leg-dot" style="background:var(--accent)"></div>P/day+hire</div><div class="leg-item"><div class="leg-dot" style="background:var(--teal)"></div>Profit/day</div></div>'+bars+'</div>';
+}
+
+init();
+</script>
+</body>
+</html>
